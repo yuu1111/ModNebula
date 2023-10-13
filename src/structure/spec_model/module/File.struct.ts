@@ -34,7 +34,7 @@ export class MiscFileStructure extends ModuleStructure {
 
     protected async recursiveModuleScan(dir: string): Promise<Module[]> {
         let acc: Module[] = []
-        const subdirs = await readdir(dir)
+        const subdirs = await readdir(dir).catch(() => [])
         for (const file of subdirs) {
             const filePath = resolve(dir, file)
             const stats = await stat(filePath)
