@@ -34,6 +34,8 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
     protected untrackedFilePatterns: string[]          // List of glob patterns. 
     protected claritasResult!: ClaritasResult
 
+    private readonly linkRegex = /^.+\.link\.json$/i
+
     constructor(
         absoluteRoot: string,
         relativeRoot: string,
@@ -97,6 +99,12 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
     protected abstract getModulePath(name: string, path: string, stats: Stats): Promise<string | null>
 
     protected async parseModule(file: string, filePath: string, stats: Stats): Promise<Module> {
+
+        const linkResult = this.linkRegex.exec(file)
+        if (linkResult != null) {
+            this.logger.info(`Found link file: ${filePath}, ${file}`)
+            return JSON.parse(await readFile(filePath, { encoding: 'utf-8' })) as Module
+        }
 
         const artifact: Artifact = {
             size: stats.size,
