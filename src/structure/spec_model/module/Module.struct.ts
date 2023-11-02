@@ -2,7 +2,7 @@ import { minimatch } from 'minimatch'
 import { createHash } from 'crypto'
 import { pathExists } from 'fs-extra/esm'
 import { Stats } from 'fs'
-import { lstat, readdir, readFile } from 'fs/promises'
+import { lstat, readdir, readFile, writeFile, unlink } from 'fs/promises'
 import { Artifact, Module, Type, TypeMetadata } from 'helios-distribution-types'
 import { resolve } from 'path'
 import { BaseModelStructure } from '../BaseModel.struct.js'
@@ -11,6 +11,7 @@ import { ClaritasResult, ClaritasModuleMetadata } from '../../../model/claritas/
 import { ClaritasWrapper } from '../../../util/java/ClaritasWrapper.js'
 import { MinecraftVersion } from '../../../util/MinecraftVersion.js'
 import { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import merge from 'lodash.merge'
 
 export interface ModuleCandidate {
     file: string
@@ -34,7 +35,7 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
     protected untrackedFilePatterns: string[]          // List of glob patterns. 
     protected claritasResult!: ClaritasResult
 
-    private readonly linkRegex = /^.+\.link\.json$/i
+    private readonly linkRegex = /^(.+)\.link\.json$/i
 
     constructor(
         absoluteRoot: string,
@@ -100,9 +101,10 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
 
     protected async parseModule(file: string, filePath: string, stats: Stats): Promise<Module> {
 
-        const linkResult = this.linkRegex.exec(file)
-        if (linkResult != null) {
-            this.logger.info(`Found link file: ${filePath}, ${file}`)
+        // Only .link.json exists, return the module from link file.
+        const linkMatch = this.linkRegex.exec(file)
+        if (linkMatch != null && !await pathExists(linkMatch[1])) {
+            this.logger.info(`Found only link file: ${filePath}, ${file}`)
             return JSON.parse(await readFile(filePath, { encoding: 'utf-8' })) as Module
         }
 
@@ -130,6 +132,20 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
         if (pth) {
             mdl.artifact.path = pth
         }
+
+        // If file and its link file both exist, write module data to link file and delete artifact file.
+        if (await pathExists(`${filePath}.link.json`)) {
+            this.logger.info(`Found additional link file: ${filePath}.link.json, ${file}`)
+            // Module data loaded from link file.
+            const linkModule = JSON.parse(await readFile(`${filePath}.link.json`, { encoding: 'utf-8' })) as Module
+            // Add link file's properties to module.
+            merge(mdl, linkModule)
+            // Save link file's properties.
+            await writeFile(`${filePath}.link.json`, JSON.stringify(mdl, null, 2))
+            // Delete artifact file.
+            await unlink(filePath)
+        }
+
         return mdl
     }
 

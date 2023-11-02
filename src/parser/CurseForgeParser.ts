@@ -7,6 +7,7 @@ import { pipeline } from 'stream/promises'
 import { ToggleableNamespace } from '../structure/spec_model/module/ToggleableModule.struct.js'
 import { CreateServerResult } from '../structure/spec_model/Server.struct.js'
 import { LoggerUtil } from '../util/LoggerUtil.js'
+import { writeFile } from 'fs/promises'
 
 const log = LoggerUtil.getLogger('CurseForgeParser')
 
@@ -142,6 +143,9 @@ export class CurseForgeParser {
                     const fileWriterStream = createWriteStream(join(dir, fileInfo.data.fileName))
 
                     await pipeline(downloadStream, fileWriterStream)
+
+                    // Write download url to link.json file.
+                    await writeFile(join(dir, `${fileInfo.data.fileName}.link.json`), JSON.stringify({ artifact: { url: fileInfo.data.downloadUrl } }, null, 2))
                 }
                 
             }
