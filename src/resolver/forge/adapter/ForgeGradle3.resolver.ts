@@ -19,7 +19,7 @@ export class ForgeGradle3Adapter extends ForgeResolver {
         if(version.getMinor() === 12 && VersionUtil.isOneDotTwelveFG2(libraryVersion)) {
             return false
         }
-        return VersionUtil.isVersionAcceptable(version, [12, 13, 14, 15, 16, 17, 18, 19, 20])
+        return VersionUtil.isVersionAcceptable(version, [12, 13, 14, 15, 16, 17, 18, 19, 20, 21])
     }
 
     private needsInstaller = false
@@ -40,7 +40,7 @@ export class ForgeGradle3Adapter extends ForgeResolver {
     private configure(): void {
 
         // Configure for 13, 14, 15, 16, 17, 18, 19
-        if(VersionUtil.isVersionAcceptable(this.minecraftVersion, [13, 14, 15, 16, 17, 18, 19, 20])) {
+        if(VersionUtil.isVersionAcceptable(this.minecraftVersion, [13, 14, 15, 16, 17, 18, 19, 20, 21])) {
             this.needsInstaller = true
             return
         }
