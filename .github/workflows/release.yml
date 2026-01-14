@@ -29,13 +29,13 @@ jobs:
       - name: Create distribution directory
         run: |
           mkdir dist-package
-          copy KamePowerModPackBuilder.exe dist-package\
+          copy modnebula.exe dist-package\
           xcopy /E /I libraries dist-package\libraries
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KamePowerModPackBuilder-windows
+          name: modnebula-windows
           path: dist-package\
 
   release:
@@ -51,28 +51,28 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: KamePowerModPackBuilder-windows
+          name: modnebula-windows
           path: dist-package
 
       - name: Create release archive
         run: |
           cd dist-package
-          7z a ../KamePowerModPackBuilder-windows.zip .
+          7z a ../modnebula-windows.zip .
           cd ..
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: KamePowerModPackBuilder-windows.zip
+          files: modnebula-windows.zip
           draft: false
           prerelease: false
           generate_release_notes: true
           body: |
             ## Installation
 
-            1. Download `KamePowerModPackBuilder-windows.zip`
+            1. Download `modnebula-windows.zip`
             2. Extract the zip file
-            3. Run `KamePowerModPackBuilder.exe`
+            3. Run `modnebula.exe`
 
             The `libraries` folder must be kept in the same directory as the exe file.
         env:

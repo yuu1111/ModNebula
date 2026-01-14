@@ -12,8 +12,8 @@
         "clean": "rimraf dist",
         "tsc": "tsc",
         "build": "bun run clean && bun run tsc",
-        "build:exe": "bun build src/index.ts --compile --minify --outfile KamePowerModPackBuilder.exe",
-        "build:exe:debug": "bun build src/index.ts --compile --sourcemap --outfile KamePowerModPackBuilder-debug.exe",
+        "build:exe": "bun build src/index.ts --compile --minify --outfile modnebula.exe",
+        "build:exe:debug": "bun build src/index.ts --compile --sourcemap --outfile modnebula-debug.exe",
         "lint": "biome check .",
         "format": "biome format --write .",
         "check": "biome check --write ."

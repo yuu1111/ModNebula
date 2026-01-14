@@ -5,6 +5,9 @@ dist
 *.exe
 *.exe.debug
 
+# Release packages
+release/
+
 
 # Log
 logs
