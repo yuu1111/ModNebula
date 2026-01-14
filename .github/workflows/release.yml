@@ -26,11 +26,17 @@ jobs:
       - name: Build executable
         run: bun run build:exe
 
+      - name: Create distribution directory
+        run: |
+          mkdir dist-package
+          copy KamePowerModPackBuilder.exe dist-package\
+          xcopy /E /I libraries dist-package\libraries
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: KamePowerModPackBuilder-windows
-          path: KamePowerModPackBuilder.exe
+          path: dist-package\
 
   release:
     name: Create Release
@@ -46,13 +52,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: KamePowerModPackBuilder-windows
+          path: dist-package
+
+      - name: Create release archive
+        run: |
+          cd dist-package
+          7z a ../KamePowerModPackBuilder-windows.zip .
+          cd ..
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: KamePowerModPackBuilder.exe
+          files: KamePowerModPackBuilder-windows.zip
           draft: false
           prerelease: false
           generate_release_notes: true
+          body: |
+            ## Installation
+
+            1. Download `KamePowerModPackBuilder-windows.zip`
+            2. Extract the zip file
+            3. Run `KamePowerModPackBuilder.exe`
+
+            The `libraries` folder must be kept in the same directory as the exe file.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
