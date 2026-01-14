@@ -1,13 +1,12 @@
-import { ModuleStructure } from './Module.struct.js'
+import type { Stats } from 'node:fs'
+import { join } from 'node:path'
+import { URL } from 'node:url'
 import { Type, TypeMetadata } from 'helios-distribution-types'
-import { Stats } from 'fs'
-import { join } from 'path'
-import { URL } from 'url'
-import { MinecraftVersion } from '../../../util/MinecraftVersion.js'
-import { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import type { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import type { MinecraftVersion } from '../../../util/MinecraftVersion.js'
+import { ModuleStructure } from './Module.struct.js'
 
 export class LibraryStructure extends ModuleStructure {
-
     constructor(
         absoluteRoot: string,
         relativeRoot: string,
@@ -15,9 +14,18 @@ export class LibraryStructure extends ModuleStructure {
         minecraftVersion: MinecraftVersion,
         untrackedFiles: UntrackedFilesOption[]
     ) {
-        super(absoluteRoot, relativeRoot, 'libraries', baseUrl, minecraftVersion, Type.Library, untrackedFiles, (name: string) => {
-            return name.toLowerCase().endsWith(TypeMetadata[this.type].defaultExtension!)
-        })
+        super(
+            absoluteRoot,
+            relativeRoot,
+            'libraries',
+            baseUrl,
+            minecraftVersion,
+            Type.Library,
+            untrackedFiles,
+            (name: string) => {
+                return name.toLowerCase().endsWith(TypeMetadata[this.type].defaultExtension!)
+            }
+        )
     }
 
     public getLoggerName(): string {
@@ -25,22 +33,21 @@ export class LibraryStructure extends ModuleStructure {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected async getModuleId(name: string, path: string): Promise<string> {
+    protected async getModuleId(name: string, _path: string): Promise<string> {
         const inference = this.attemptCrudeInference(name)
         return this.generateMavenIdentifier(this.getDefaultGroup(), inference.name, inference.version)
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected async getModuleName(name: string, path: string): Promise<string> {
+    protected async getModuleName(name: string, _path: string): Promise<string> {
         const inference = this.attemptCrudeInference(name)
         return inference.name
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected async getModuleUrl(name: string, path: string, stats: Stats): Promise<string> {
+    protected async getModuleUrl(name: string, _path: string, _stats: Stats): Promise<string> {
         return new URL(join(this.relativeRoot, name), this.baseUrl).toString()
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected async getModulePath(name: string, path: string, stats: Stats): Promise<string | null> {
+    protected async getModulePath(_name: string, _path: string, _stats: Stats): Promise<string | null> {
         return null
     }
-
 }

@@ -1,17 +1,18 @@
 import got from 'got'
-import { PromotionsSlim } from '../model/forge/PromotionsSlim.js'
-import { MinecraftVersion } from './MinecraftVersion.js'
+import type {
+    FabricInstallerMeta,
+    FabricLoaderMeta,
+    FabricProfileJson,
+    FabricVersionMeta,
+} from '../model/fabric/FabricMeta.js'
+import type { PromotionsSlim } from '../model/forge/PromotionsSlim.js'
 import { LoggerUtil } from './LoggerUtil.js'
-import { FabricInstallerMeta, FabricLoaderMeta, FabricProfileJson, FabricVersionMeta } from '../model/fabric/FabricMeta.js'
+import type { MinecraftVersion } from './MinecraftVersion.js'
 
 export class VersionUtil {
-
     private static readonly logger = LoggerUtil.getLogger('VersionUtil')
 
-    public static readonly PROMOTION_TYPE = [
-        'recommended',
-        'latest'
-    ]
+    public static readonly PROMOTION_TYPE = ['recommended', 'latest']
 
     public static isVersionAcceptable(version: MinecraftVersion, acceptable: number[]): boolean {
         if (version.getMajor() === 1) {
@@ -21,20 +22,19 @@ export class VersionUtil {
     }
 
     public static versionGte(version: string, min: string): boolean {
-
-        if(version === min) {
+        if (version === min) {
             return true
         }
 
-        const left = version.split('.').map(x => Number(x))
-        const right = min.split('.').map(x => Number(x))
+        const left = version.split('.').map((x) => Number(x))
+        const right = min.split('.').map((x) => Number(x))
 
-        if(left.length != right.length) {
+        if (left.length !== right.length) {
             throw new Error('Cannot compare mismatched versions.')
         }
 
-        for(let i=0; i<left.length; i++) {
-            if(left[i] > right[i]) {
+        for (let i = 0; i < left.length; i++) {
+            if (left[i] > right[i]) {
                 return true
             }
         }
@@ -51,14 +51,14 @@ export class VersionUtil {
 
     public static isOneDotTwelveFG2(libraryVersion: string): boolean {
         const maxFG2 = [14, 23, 5, 2847]
-        const verSplit = libraryVersion.split('.').map(v => Number(v))
+        const verSplit = libraryVersion.split('.').map((v) => Number(v))
 
-        for(let i=0; i<maxFG2.length; i++) {
-            if(verSplit[i] > maxFG2[i]) {
+        for (let i = 0; i < maxFG2.length; i++) {
+            if (verSplit[i] > maxFG2[i]) {
                 return false
             }
         }
-        
+
         return true
     }
 
@@ -66,17 +66,24 @@ export class VersionUtil {
         const response = await got.get<PromotionsSlim>({
             method: 'get',
             url: 'https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json',
-            responseType: 'json'
+            responseType: 'json',
         })
         return response.body
     }
 
-    public static getPromotedVersionStrict(index: PromotionsSlim, minecraftVersion: MinecraftVersion, promotion: string): string {
+    public static getPromotedVersionStrict(
+        index: PromotionsSlim,
+        minecraftVersion: MinecraftVersion,
+        promotion: string
+    ): string {
         const workingPromotion = promotion.toLowerCase()
         return index.promos[`${minecraftVersion}-${workingPromotion}`]
     }
 
-    public static async getPromotedForgeVersion(minecraftVersion: MinecraftVersion, promotion: string): Promise<string> {
+    public static async getPromotedForgeVersion(
+        minecraftVersion: MinecraftVersion,
+        promotion: string
+    ): Promise<string> {
         const workingPromotion = promotion.toLowerCase()
         const res = await VersionUtil.getPromotionIndex()
         let version = res.promos[`${minecraftVersion}-${workingPromotion}`]
@@ -98,7 +105,7 @@ export class VersionUtil {
         const response = await got.get<FabricInstallerMeta[]>({
             method: 'get',
             url: 'https://meta.fabricmc.net/v2/versions/installer',
-            responseType: 'json'
+            responseType: 'json',
         })
         return response.body
     }
@@ -107,7 +114,7 @@ export class VersionUtil {
         const response = await got.get<FabricLoaderMeta[]>({
             method: 'get',
             url: 'https://meta.fabricmc.net/v2/versions/loader',
-            responseType: 'json'
+            responseType: 'json',
         })
         return response.body
     }
@@ -116,7 +123,7 @@ export class VersionUtil {
         const response = await got.get<FabricVersionMeta[]>({
             method: 'get',
             url: 'https://meta.fabricmc.net/v2/versions/game',
-            responseType: 'json'
+            responseType: 'json',
         })
         return response.body
     }
@@ -125,15 +132,14 @@ export class VersionUtil {
         const response = await got.get<FabricProfileJson>({
             method: 'get',
             url: `https://meta.fabricmc.net/v2/versions/loader/${gameVersion}/${loaderVersion}/profile/json`,
-            responseType: 'json'
+            responseType: 'json',
         })
         return response.body
     }
 
     public static async getPromotedFabricVersion(promotion: string): Promise<string> {
         const stable = promotion.toLowerCase() === 'recommended'
-        const fabricLoaderMeta = await this.getFabricLoaderMeta()
-        return !stable ? fabricLoaderMeta[0].version : fabricLoaderMeta.find(({ stable }) => stable)!.version
+        const fabricLoaderMeta = await VersionUtil.getFabricLoaderMeta()
+        return !stable ? fabricLoaderMeta[0].version : fabricLoaderMeta.find(({ stable }) => stable)?.version
     }
-
 }

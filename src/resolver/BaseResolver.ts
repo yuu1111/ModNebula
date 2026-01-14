@@ -1,12 +1,11 @@
-import { Artifact, Module } from 'helios-distribution-types'
-import { VersionSegmented } from '../util/VersionSegmented.js'
-import { Resolver } from './Resolver.js'
-import { MinecraftVersion } from '../util/MinecraftVersion.js'
-import { Stats } from 'fs'
-import { createHash } from 'crypto'
+import { createHash } from 'node:crypto'
+import type { Stats } from 'node:fs'
+import type { Artifact, Module } from 'helios-distribution-types'
+import type { MinecraftVersion } from '../util/MinecraftVersion.js'
+import type { VersionSegmented } from '../util/VersionSegmented.js'
+import type { Resolver } from './Resolver.js'
 
 export abstract class BaseResolver implements Resolver, VersionSegmented {
-
     constructor(
         protected absoluteRoot: string,
         protected relativeRoot: string,
@@ -20,8 +19,7 @@ export abstract class BaseResolver implements Resolver, VersionSegmented {
         return {
             size: stats.size,
             MD5: createHash('md5').update(buf).digest('hex'),
-            url
+            url,
         }
     }
-
 }

@@ -1,5 +1,4 @@
 export interface ClaritasModuleMetadata {
-    
     /**
      * Present on ForgeMods (1.7-1.12) of type MOD.
      * Possibly present on ForgeMods (1.7-1.12) of type CORE_MOD and TWEAKER.
@@ -27,18 +26,15 @@ export interface ClaritasModuleMetadata {
      * Never present in all other circumstances.
      */
     modType?: ForgeModType_1_7
-
 }
 
 export enum ForgeModType_1_7 {
     MOD = 'MOD',
     CORE_MOD = 'CORE_MOD',
     TWEAKER = 'TWEAKER',
-    UNKNOWN = 'UNKNOWN'
+    UNKNOWN = 'UNKNOWN',
 }
 
 export interface ClaritasResult {
-
     [jarPath: string]: ClaritasModuleMetadata | undefined
-
 }

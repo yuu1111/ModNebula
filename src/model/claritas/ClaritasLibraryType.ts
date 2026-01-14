@@ -1,5 +1,3 @@
 export enum LibraryType {
-
-    FORGE = 'FORGE'
-
+    FORGE = 'FORGE',
 }

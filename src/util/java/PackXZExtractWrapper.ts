@@ -1,8 +1,7 @@
-import { join } from 'path'
+import { join } from 'node:path'
 import { JarExecutor } from './JarExecutor.js'
 
 export class PackXZExtractWrapper extends JarExecutor<void> {
-
     constructor() {
         super('PackXZExtract')
     }
@@ -26,5 +25,4 @@ export class PackXZExtractWrapper extends JarExecutor<void> {
     public unpack(paths: string[]): Promise<void> {
         return this.execute('-pack', paths)
     }
-
 }

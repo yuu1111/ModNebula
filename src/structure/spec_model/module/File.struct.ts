@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Stats } from 'fs'
-import { Type, Module } from 'helios-distribution-types'
-import { URL } from 'url'
+import type { Stats } from 'node:fs'
+import { readdir, stat } from 'node:fs/promises'
+import { join, resolve, sep } from 'node:path'
+import { URL } from 'node:url'
+import { type Module, Type } from 'helios-distribution-types'
+import type { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import type { MinecraftVersion } from '../../../util/MinecraftVersion.js'
 import { ModuleStructure } from './Module.struct.js'
-import { readdir, stat } from 'fs/promises'
-import { join, resolve, sep } from 'path'
-import { MinecraftVersion } from '../../../util/MinecraftVersion.js'
-import { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
 
 export class MiscFileStructure extends ModuleStructure {
-
     constructor(
         absoluteRoot: string,
         relativeRoot: string,
@@ -41,7 +40,7 @@ export class MiscFileStructure extends ModuleStructure {
             if (stats.isDirectory()) {
                 acc = acc.concat(await this.recursiveModuleScan(filePath))
             } else {
-                if(!this.FILE_NAME_BLACKLIST.includes(file)) {
+                if (!this.FILE_NAME_BLACKLIST.includes(file)) {
                     acc.push(await this.parseModule(file, filePath, stats))
                 }
             }
@@ -49,17 +48,25 @@ export class MiscFileStructure extends ModuleStructure {
         return acc
     }
 
-    protected async getModuleId(name: string, path: string): Promise<string> {
+    protected async getModuleId(name: string, _path: string): Promise<string> {
         return name
     }
-    protected async getModuleName(name: string, path: string): Promise<string> {
+    protected async getModuleName(name: string, _path: string): Promise<string> {
         return name
     }
-    protected async getModuleUrl(name: string, path: string, stats: Stats): Promise<string> {
-        return new URL(join(this.relativeRoot, ...path.substr(this.containerDirectory.length+1).split(sep).map(s => encodeURIComponent(s))), this.baseUrl).toString()
+    protected async getModuleUrl(_name: string, path: string, _stats: Stats): Promise<string> {
+        return new URL(
+            join(
+                this.relativeRoot,
+                ...path
+                    .substr(this.containerDirectory.length + 1)
+                    .split(sep)
+                    .map((s) => encodeURIComponent(s))
+            ),
+            this.baseUrl
+        ).toString()
     }
-    protected async getModulePath(name: string, path: string, stats: Stats): Promise<string | null> {
-        return path.substr(this.containerDirectory.length+1).replace(/\\/g, '/')
+    protected async getModulePath(_name: string, path: string, _stats: Stats): Promise<string | null> {
+        return path.substr(this.containerDirectory.length + 1).replace(/\\/g, '/')
     }
-
 }

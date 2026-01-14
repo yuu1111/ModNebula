@@ -1,19 +1,19 @@
+import { writeFile } from 'node:fs/promises'
+import { resolve as resolvePath } from 'node:path'
+import { URL } from 'node:url'
+import { inspect } from 'node:util'
 import dotenv from 'dotenv'
-import { writeFile } from 'fs/promises'
-import { resolve as resolvePath } from 'path'
-import { URL } from 'url'
-import { inspect } from 'util'
-import yargs from 'yargs/yargs'
-import { Argv, CommandModule } from 'yargs'
+import type { Argv, CommandModule } from 'yargs'
 import { hideBin } from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+import { CurseForgeParser } from './parser/CurseForgeParser.js'
 import { DistributionStructure } from './structure/spec_model/Distribution.struct.js'
 import { ServerStructure } from './structure/spec_model/Server.struct.js'
+import { LoggerUtil } from './util/LoggerUtil.js'
+import { MinecraftVersion } from './util/MinecraftVersion.js'
+import { generateSchemas } from './util/SchemaUtil.js'
 import { VersionSegmentedRegistry } from './util/VersionSegmentedRegistry.js'
 import { VersionUtil } from './util/VersionUtil.js'
-import { MinecraftVersion } from './util/MinecraftVersion.js'
-import { LoggerUtil } from './util/LoggerUtil.js'
-import { generateSchemas } from './util/SchemaUtil.js'
-import { CurseForgeParser } from './parser/CurseForgeParser.js'
 
 dotenv.config()
 
@@ -24,7 +24,7 @@ function getRoot(): string {
 }
 
 function getHeliosDataFolder(): string | null {
-    if(process.env.HELIOS_DATA_FOLDER) {
+    if (process.env.HELIOS_DATA_FOLDER) {
         return resolvePath(process.env.HELIOS_DATA_FOLDER)
     }
     return null
@@ -35,12 +35,12 @@ function getBaseURL(): string {
     // Users must provide protocol in all other instances.
     if (!baseUrl.includes('//')) {
         if (baseUrl.toLowerCase().startsWith('localhost')) {
-            baseUrl = 'http://' + baseUrl
+            baseUrl = `http://${baseUrl}`
         } else {
             throw new TypeError('Please provide a URL protocol (ex. http:// or https://)')
         }
     }
-    return (new URL(baseUrl)).toString()
+    return new URL(baseUrl).toString()
 }
 
 function installLocalOption(yargs: Argv): Argv {
@@ -49,7 +49,7 @@ function installLocalOption(yargs: Argv): Argv {
         type: 'boolean',
         demandOption: false,
         global: false,
-        default: false
+        default: false,
     })
 }
 
@@ -59,7 +59,7 @@ function discardOutputOption(yargs: Argv): Argv {
         type: 'boolean',
         demandOption: false,
         global: false,
-        default: false
+        default: false,
     })
 }
 
@@ -69,7 +69,7 @@ function invalidateCacheOption(yargs: Argv): Argv {
         type: 'boolean',
         demandOption: false,
         global: false,
-        default: false
+        default: false,
     })
 }
 
@@ -112,7 +112,7 @@ function namePositional(yargs: Argv) {
     return yargs.option('name', {
         describe: 'Distribution index file name.',
         type: 'string',
-        default: 'distribution'
+        default: 'distribution',
     })
 }
 
@@ -139,7 +139,7 @@ const initRootCommand: CommandModule = {
         } catch (error) {
             logger.error(`Failed to init new root at ${argv.root}`, error)
         }
-    }
+    },
 }
 
 const initCommand: CommandModule = {
@@ -147,12 +147,11 @@ const initCommand: CommandModule = {
     aliases: ['i'],
     describe: 'Base init command.',
     builder: (yargs) => {
-        return yargs
-            .command(initRootCommand)
+        return yargs.command(initRootCommand)
     },
     handler: (argv) => {
         argv._handled = true
-    }
+    },
 }
 
 // -----------------
@@ -166,19 +165,19 @@ const generateServerCommand: CommandModule = {
         return yargs
             .positional('id', {
                 describe: 'Server id.',
-                type: 'string'
+                type: 'string',
             })
             .positional('version', {
                 describe: 'Minecraft version.',
-                type: 'string'
+                type: 'string',
             })
             .option('forge', {
                 describe: 'Forge version.',
-                type: 'string'
+                type: 'string',
             })
             .option('fabric', {
                 describe: 'Fabric version.',
-                type: 'string'
+                type: 'string',
             })
             .conflicts('forge', 'fabric')
     },
@@ -186,21 +185,22 @@ const generateServerCommand: CommandModule = {
         argv.root = getRoot()
 
         logger.debug(`Root set to ${argv.root}`)
-        logger.debug(`Generating server ${argv.id} for Minecraft ${argv.version}.`,
+        logger.debug(
+            `Generating server ${argv.id} for Minecraft ${argv.version}.`,
             `\n\t└ Forge version: ${argv.forge}`,
             `\n\t└ Fabric version: ${argv.fabric}`
         )
 
         const minecraftVersion = new MinecraftVersion(argv.version as string)
 
-        if(argv.forge != null) {
+        if (argv.forge != null) {
             if (VersionUtil.isPromotionVersion(argv.forge as string)) {
                 logger.debug(`Resolving ${argv.forge as string} Forge Version..`)
                 const version = await VersionUtil.getPromotedForgeVersion(minecraftVersion, argv.forge as string)
                 logger.debug(`Forge version set to ${version}`)
                 argv.forge = version
             }
-            if(minecraftVersion.isGreaterThanOrEqualTo(new MinecraftVersion('1.20.3'))) {
+            if (minecraftVersion.isGreaterThanOrEqualTo(new MinecraftVersion('1.20.3'))) {
                 logger.error('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓')
                 logger.error('┃                     !!  WARNING !!                      ┃')
                 logger.error('┃                                                         ┃')
@@ -213,7 +213,7 @@ const generateServerCommand: CommandModule = {
             }
         }
 
-        if(argv.fabric != null) {
+        if (argv.fabric != null) {
             if (VersionUtil.isPromotionVersion(argv.fabric as string)) {
                 logger.debug(`Resolving ${argv.fabric as string} Fabric Version..`)
                 const version = await VersionUtil.getPromotedFabricVersion(argv.fabric as string)
@@ -223,15 +223,11 @@ const generateServerCommand: CommandModule = {
         }
 
         const serverStruct = new ServerStructure(argv.root as string, getBaseURL(), false, false)
-        await serverStruct.createServer(
-            argv.id as string,
-            minecraftVersion,
-            {
-                forgeVersion: argv.forge as string,
-                fabricVersion: argv.fabric as string
-            }
-        )
-    }
+        await serverStruct.createServer(argv.id as string, minecraftVersion, {
+            forgeVersion: argv.forge as string,
+            fabricVersion: argv.fabric as string,
+        })
+    },
 }
 
 const generateServerCurseForgeCommand: CommandModule = {
@@ -242,11 +238,11 @@ const generateServerCurseForgeCommand: CommandModule = {
         return yargs
             .positional('id', {
                 describe: 'Server id.',
-                type: 'string'
+                type: 'string',
             })
             .positional('zipName', {
                 describe: 'The name of the modpack zip file.',
-                type: 'string'
+                type: 'string',
             })
     },
     handler: async (argv) => {
@@ -262,24 +258,22 @@ const generateServerCurseForgeCommand: CommandModule = {
 
         // Extract forge version
         // TODO Support fabric
-        const forgeModLoader = modpackManifest.minecraft.modLoaders.find(({ id }) => id.toLowerCase().startsWith('forge-'))
+        const forgeModLoader = modpackManifest.minecraft.modLoaders.find(({ id }) =>
+            id.toLowerCase().startsWith('forge-')
+        )
         const forgeVersion = forgeModLoader != null ? forgeModLoader.id.substring('forge-'.length) : undefined
         logger.debug(`Forge version set to ${forgeVersion}`)
 
         const serverStruct = new ServerStructure(argv.root as string, getBaseURL(), false, false)
-        const createServerResult = await serverStruct.createServer(
-            argv.id as string,
-            minecraftVersion,
-            {
-                version: modpackManifest.version,
-                forgeVersion
-            }
-        )
+        const createServerResult = await serverStruct.createServer(argv.id as string, minecraftVersion, {
+            version: modpackManifest.version,
+            forgeVersion,
+        })
 
-        if(createServerResult) {
+        if (createServerResult) {
             await parser.enrichServer(createServerResult, modpackManifest)
         }
-    }
+    },
 }
 
 const generateDistroCommand: CommandModule = {
@@ -306,16 +300,21 @@ const generateDistroCommand: CommandModule = {
         logger.debug(`Invoked generate distro name ${finalName}.`)
 
         const doLocalInstall = argv.installLocal as boolean
-        const discardOutput = argv.discardOutput as boolean ?? false
-        const invalidateCache = argv.invalidateCache as boolean ?? false
+        const discardOutput = (argv.discardOutput as boolean) ?? false
+        const invalidateCache = (argv.invalidateCache as boolean) ?? false
         const heliosDataFolder = getHeliosDataFolder()
-        if(doLocalInstall && heliosDataFolder == null) {
+        if (doLocalInstall && heliosDataFolder == null) {
             logger.error('You MUST specify HELIOS_DATA_FOLDER in your .env when using the --installLocal option.')
             return
         }
 
         try {
-            const distributionStruct = new DistributionStructure(argv.root as string, argv.baseUrl as string, discardOutput, invalidateCache)
+            const distributionStruct = new DistributionStructure(
+                argv.root as string,
+                argv.baseUrl as string,
+                discardOutput,
+                invalidateCache
+            )
             const distro = await distributionStruct.getSpecModel()
             const distroOut = JSON.stringify(distro, null, 2)
             const distroPath = resolvePath(argv.root as string, finalName)
@@ -323,17 +322,16 @@ const generateDistroCommand: CommandModule = {
             logger.info(`Successfully generated ${finalName}`)
             logger.info(`Saved to ${distroPath}`)
             logger.debug('Preview:\n', distro)
-            if(doLocalInstall) {
+            if (doLocalInstall) {
                 const finalDestination = resolvePath(heliosDataFolder!, finalName)
                 logger.info(`Installing distribution to ${finalDestination}`)
                 await writeFile(finalDestination, distroOut)
                 logger.info('Success!')
             }
-            
         } catch (error) {
             logger.error(`Failed to generate distribution with root ${argv.root}.`, error)
         }
-    }
+    },
 }
 
 const generateSchemasCommand: CommandModule = {
@@ -348,11 +346,10 @@ const generateSchemasCommand: CommandModule = {
         try {
             await generateSchemas(argv.root as string)
             logger.info('Successfully generated schemas')
-            
         } catch (error) {
             logger.error(`Failed to generate schemas with root ${argv.root}.`, error)
         }
-    }
+    },
 }
 
 const generateCommand: CommandModule = {
@@ -368,7 +365,7 @@ const generateCommand: CommandModule = {
     },
     handler: (argv) => {
         argv._handled = true
-    }
+    },
 }
 
 const validateCommand: CommandModule = {
@@ -379,7 +376,7 @@ const validateCommand: CommandModule = {
     },
     handler: (argv) => {
         logger.debug(`Invoked validate with name ${argv.name}.json`)
-    }
+    },
 }
 
 const latestForgeCommand: CommandModule = {
@@ -391,7 +388,7 @@ const latestForgeCommand: CommandModule = {
         const minecraftVersion = new MinecraftVersion(argv.version as string)
         const forgeVer = await VersionUtil.getPromotedForgeVersion(minecraftVersion, 'latest')
         logger.info(`Latest version: Forge ${forgeVer} (${argv.version})`)
-    }
+    },
 }
 
 const recommendedForgeCommand: CommandModule = {
@@ -415,8 +412,7 @@ const recommendedForgeCommand: CommandModule = {
                 logger.info(`No build available for ${minecraftVersion}.`)
             }
         }
-
-    }
+    },
 }
 
 const testCommand: CommandModule = {
@@ -429,13 +425,20 @@ const testCommand: CommandModule = {
         logger.debug(`Invoked test with mcVer ${argv.mcVer} forgeVer ${argv.forgeVer}`)
         logger.info(process.cwd())
         const mcVer = new MinecraftVersion(argv.mcVer as string)
-        const resolver = VersionSegmentedRegistry.getForgeResolver(mcVer,
-            argv.forgeVer as string, getRoot(), '', getBaseURL(), false, false)
+        const resolver = VersionSegmentedRegistry.getForgeResolver(
+            mcVer,
+            argv.forgeVer as string,
+            getRoot(),
+            '',
+            getBaseURL(),
+            false,
+            false
+        )
         if (resolver != null) {
             const mdl = await resolver.getModule()
             logger.info(inspect(mdl, false, null, true))
         }
-    }
+    },
 }
 
 // Registering yargs configuration.
@@ -449,5 +452,4 @@ await yargs(hideBin(process.argv))
     .command(recommendedForgeCommand)
     .command(testCommand)
     .demandCommand()
-    .help()
-    .argv
+    .help().argv

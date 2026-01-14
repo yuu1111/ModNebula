@@ -1,10 +1,10 @@
+import { writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { fileURLToPath, URL } from 'node:url'
 import { mkdirs, pathExists, remove } from 'fs-extra/esm'
-import { writeFile } from 'fs/promises'
-import { join, resolve } from 'path'
 import { createGenerator } from 'ts-json-schema-generator'
-import { URL, fileURLToPath } from 'url'
-import { DistroMeta } from '../model/nebula/DistroMeta.js'
-import { ServerMeta } from '../model/nebula/ServerMeta.js'
+import type { DistroMeta } from '../model/nebula/DistroMeta.js'
+import type { ServerMeta } from '../model/nebula/ServerMeta.js'
 import { LoggerUtil } from './LoggerUtil.js'
 
 const logger = LoggerUtil.getLogger('SchemaUtil')
@@ -25,7 +25,7 @@ export type ServerMetaSchema = ServerMeta & SchemaType
 
 export enum SchemaTypes {
     DistroMetaSchema = 'DistroMetaSchema',
-    ServerMetaSchema = 'ServerMetaSchema'
+    ServerMetaSchema = 'ServerMetaSchema',
 }
 
 function getSchemaFileName(typeName: string): string {
@@ -43,28 +43,26 @@ function getSchemaLocation(typeName: string, absoluteRoot: string): string {
 export function addSchemaToObject<T>(obj: T, typeName: string, absoluteRoot: string): T {
     return {
         $schema: new URL(`file:${getSchemaLocation(typeName, absoluteRoot)}`).href,
-        ...obj
+        ...obj,
     }
 }
 
 export async function generateSchemas(absoluteRoot: string): Promise<void> {
-
     const selfPath = __filename.replace('dist', 'src').replace('.js', '.ts')
 
     const schemaDir = getSchemaDirectory(absoluteRoot)
-    if(await pathExists(schemaDir)) {
+    if (await pathExists(schemaDir)) {
         await remove(schemaDir)
     }
     await mkdirs(schemaDir)
 
-    for(const typeName of Object.values(SchemaTypes)) {
-
+    for (const typeName of Object.values(SchemaTypes)) {
         logger.info(`Generating schema for ${typeName}`)
 
         const schema = createGenerator({
             tsconfig: join(__dirname, '..', '..', 'tsconfig.json'),
             path: selfPath,
-            type: typeName
+            type: typeName,
         }).createSchema(typeName)
 
         const schemaString = JSON.stringify(schema)
@@ -73,5 +71,4 @@ export async function generateSchemas(absoluteRoot: string): Promise<void> {
 
         logger.info(`Schema for ${typeName} saved to ${schemaLoc}`)
     }
-
 }

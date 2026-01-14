@@ -1,13 +1,13 @@
-import { createWriteStream } from 'fs'
+import { createWriteStream } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { pipeline } from 'node:stream/promises'
 import { mkdirs } from 'fs-extra/esm'
 import got from 'got'
 import StreamZip from 'node-stream-zip'
-import { join, resolve } from 'path'
-import { pipeline } from 'stream/promises'
 import { ToggleableNamespace } from '../structure/spec_model/module/ToggleableModule.struct.js'
-import { CreateServerResult } from '../structure/spec_model/Server.struct.js'
+import type { CreateServerResult } from '../structure/spec_model/Server.struct.js'
 import { LoggerUtil } from '../util/LoggerUtil.js'
-import { writeFile } from 'fs/promises'
 
 const log = LoggerUtil.getLogger('CurseForgeParser')
 
@@ -55,24 +55,19 @@ export interface CurseForgeModFileResponse {
     }
 }
 
-
 export class CurseForgeParser {
-
     private static cfClient = got.extend({
         prefixUrl: 'https://api.curseforge.com/v1',
         responseType: 'json',
         headers: {
-            'X-API-KEY': '$2a$10$JL4kTO/N/oXIM6o3uTYC3eLxGrOI4BIAqpX4vAFeIPoXiTtagidkK'
-        }
+            'X-API-KEY': '$2a$10$JL4kTO/N/oXIM6o3uTYC3eLxGrOI4BIAqpX4vAFeIPoXiTtagidkK',
+        },
     })
 
     private modpackDir: string
     private zipPath: string
 
-    constructor(
-        private absoluteRoot: string,
-        private zipFileName: string
-    ) {
+    constructor(absoluteRoot: string, zipFileName: string) {
         this.modpackDir = join(absoluteRoot, 'modpacks', 'curseforge')
         this.zipPath = join(this.modpackDir, zipFileName)
     }
@@ -82,7 +77,6 @@ export class CurseForgeParser {
     }
 
     public async getModpackManifest(): Promise<CurseForgeManifest> {
-
         const zip = new StreamZip.async({ file: this.zipPath })
         return JSON.parse((await zip.entryData('manifest.json')).toString('utf8')) as CurseForgeManifest
     }
@@ -93,51 +87,54 @@ export class CurseForgeParser {
         // Extract overrides
         const zip = new StreamZip.async({ file: this.zipPath })
         try {
-            if(manifest.overrides) {
+            if (manifest.overrides) {
                 await zip.extract(manifest.overrides, createServerResult.miscFileContainer)
             }
-        }
-        finally {
+        } finally {
             await zip.close()
         }
 
-        if(createServerResult.modContainer) {
+        if (createServerResult.modContainer) {
             const requiredPath = resolve(createServerResult.modContainer, ToggleableNamespace.REQUIRED)
             const optionalPath = resolve(createServerResult.modContainer, ToggleableNamespace.OPTIONAL_ON)
 
-            const disallowedFiles: { name: string, fileName: string, url: string }[] = []
+            const disallowedFiles: { name: string; fileName: string; url: string }[] = []
 
             // Download mods
-            for(const file of manifest.files) {
+            for (const file of manifest.files) {
                 log.debug(`Processing - Mod: ${file.projectID}, File: ${file.fileID}`)
-                const fileInfo = (await CurseForgeParser.cfClient.get<CurseForgeModFileResponse>(`mods/${file.projectID}/files/${file.fileID}`)).body
+                const fileInfo = (
+                    await CurseForgeParser.cfClient.get<CurseForgeModFileResponse>(
+                        `mods/${file.projectID}/files/${file.fileID}`
+                    )
+                ).body
                 log.debug(`Downloading ${fileInfo.data.fileName}`)
-                
+
                 let dir: string
                 const fileNameLower = fileInfo.data.fileName.toLowerCase()
-                if(fileNameLower.endsWith('jar')) {
+                if (fileNameLower.endsWith('jar')) {
                     dir = file.required ? requiredPath : optionalPath
-                }
-                else if(fileNameLower.endsWith('zip')) {
+                } else if (fileNameLower.endsWith('zip')) {
                     // Assume it's a resource pack.
                     dir = join(createServerResult.miscFileContainer, 'resourcepacks')
                     await mkdirs(dir)
-                }
-                else {
+                } else {
                     dir = createServerResult.miscFileContainer
                 }
 
                 const thirdPartyDisallowed = fileInfo.data.downloadUrl == null
-                if(thirdPartyDisallowed) {
-
-                    log.warn(`${fileInfo.data.fileName} is not available for 3rd-party download through the curseforge API!`)
-                    const modInfo = (await CurseForgeParser.cfClient.get<CurseForgeModResponse>(`mods/${file.projectID}`)).body
+                if (thirdPartyDisallowed) {
+                    log.warn(
+                        `${fileInfo.data.fileName} is not available for 3rd-party download through the curseforge API!`
+                    )
+                    const modInfo = (
+                        await CurseForgeParser.cfClient.get<CurseForgeModResponse>(`mods/${file.projectID}`)
+                    ).body
                     disallowedFiles.push({
                         name: modInfo.data.name,
                         fileName: fileInfo.data.fileName,
-                        url: `https://www.curseforge.com/minecraft/mc-mods/${modInfo.data.slug}/download/${file.fileID}`
+                        url: `https://www.curseforge.com/minecraft/mc-mods/${modInfo.data.slug}/download/${file.fileID}`,
                     })
-
                 } else {
                     const downloadStream = got.stream(fileInfo.data.downloadUrl)
                     const fileWriterStream = createWriteStream(join(dir, fileInfo.data.fileName))
@@ -145,13 +142,14 @@ export class CurseForgeParser {
                     await pipeline(downloadStream, fileWriterStream)
 
                     // Write download url to link.json file.
-                    await writeFile(join(dir, `${fileInfo.data.fileName}.link.json`), JSON.stringify({ artifact: { url: fileInfo.data.downloadUrl } }, null, 2))
+                    await writeFile(
+                        join(dir, `${fileInfo.data.fileName}.link.json`),
+                        JSON.stringify({ artifact: { url: fileInfo.data.downloadUrl } }, null, 2)
+                    )
                 }
-                
             }
 
-            if(disallowedFiles.length > 0) {
-
+            if (disallowedFiles.length > 0) {
                 log.error('============================================')
                 log.error('\x1b[41mWARNING\x1b[0m')
                 log.error(`${disallowedFiles.length} files declared by this modpack do not permit 3rd-party downloads.`)
@@ -159,7 +157,7 @@ export class CurseForgeParser {
                 log.error('The mods and their download urls will be listed below.')
                 log.error('============================================')
 
-                for(const file of disallowedFiles) {
+                for (const file of disallowedFiles) {
                     log.error(`${file.name} (${file.fileName}) - \x1b[32m${file.url}\x1b[0m`)
                 }
 
@@ -168,8 +166,6 @@ export class CurseForgeParser {
                 log.error('MANUAL ACTION REQUIRED! SCROLL UP AND READ THE WARNING!')
                 log.error('============================================')
             }
-
         }
     }
-
 }

@@ -1,4 +1,4 @@
-import { Server } from 'helios-distribution-types'
+import type { Server } from 'helios-distribution-types'
 
 export interface UntrackedFilesOption {
     /**
@@ -19,7 +19,6 @@ export interface ServerMetaOptions {
 }
 
 export function getDefaultServerMeta(id: string, version: string, options?: ServerMetaOptions): ServerMeta {
-
     const servMeta: ServerMeta = {
         meta: {
             version: options?.version ?? '1.0.0',
@@ -30,24 +29,24 @@ export function getDefaultServerMeta(id: string, version: string, options?: Serv
             discord: {
                 shortId: '<FILL IN OR REMOVE DISCORD OBJECT>',
                 largeImageText: '<FILL IN OR REMOVE DISCORD OBJECT>',
-                largeImageKey: '<FILL IN OR REMOVE DISCORD OBJECT>'
+                largeImageKey: '<FILL IN OR REMOVE DISCORD OBJECT>',
             },
             mainServer: false,
-            autoconnect: false
-        }
+            autoconnect: false,
+        },
     }
 
-    if(options?.forgeVersion) {
+    if (options?.forgeVersion) {
         servMeta.meta.description = `${servMeta.meta.description} (Forge v${options.forgeVersion})`
         servMeta.forge = {
-            version: options.forgeVersion
+            version: options.forgeVersion,
         }
     }
 
-    if(options?.fabricVersion) {
+    if (options?.fabricVersion) {
         servMeta.meta.description = `${servMeta.meta.description} (Fabric v${options.fabricVersion})`
         servMeta.fabric = {
-            version: options.fabricVersion
+            version: options.fabricVersion,
         }
     }
 
@@ -58,7 +57,6 @@ export function getDefaultServerMeta(id: string, version: string, options?: Serv
 }
 
 export interface ServerMeta {
-
     /**
      * Server metadata to be forwarded to the distribution file.
      */
@@ -100,5 +98,4 @@ export interface ServerMeta {
      * A list of option objects defining patterns for untracked files.
      */
     untrackedFiles?: UntrackedFilesOption[]
-
 }

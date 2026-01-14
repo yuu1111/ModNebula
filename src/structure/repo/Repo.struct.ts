@@ -1,19 +1,14 @@
+import { join } from 'node:path'
 import { mkdirs } from 'fs-extra/esm'
-import { join } from 'path'
 import { BaseFileStructure } from '../BaseFileStructure.js'
 import { LibRepoStructure } from './LibRepo.struct.js'
 import { VersionRepoStructure } from './VersionRepo.struct.js'
 
 export class RepoStructure extends BaseFileStructure {
-
     private libRepoStruct: LibRepoStructure
     private versionRepoStruct: VersionRepoStructure
 
-    constructor(
-        absoluteRoot: string,
-        relativeRoot: string,
-        name: string
-    ) {
+    constructor(absoluteRoot: string, relativeRoot: string, name: string) {
         super(absoluteRoot, relativeRoot, 'repo')
         this.libRepoStruct = new LibRepoStructure(this.containerDirectory, this.relativeRoot)
         this.versionRepoStruct = new VersionRepoStructure(this.containerDirectory, this.relativeRoot, name)
@@ -53,5 +48,4 @@ export class RepoStructure extends BaseFileStructure {
     public getForgeCacheDirectory(artifactVersion: string): string {
         return join(this.getCacheDirectory(), 'forge', artifactVersion)
     }
-
 }

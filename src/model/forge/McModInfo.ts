@@ -1,6 +1,5 @@
 // https://mcforge.readthedocs.io/en/latest/gettingstarted/structuring/#the-mcmodinfo-file
 export interface McModInfo {
-
     modid: string
     name: string
     description: string
@@ -18,5 +17,4 @@ export interface McModInfo {
     requiredMods: string[]
     dependencies: string[]
     dependants: string[] // Spelled as dependants on forge's wiki.
-
 }

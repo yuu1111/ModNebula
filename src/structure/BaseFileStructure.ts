@@ -1,11 +1,10 @@
+import { join, resolve } from 'node:path'
 import { mkdirs } from 'fs-extra/esm'
-import { join, resolve } from 'path'
-import { FileStructure } from './FileStructure.js'
-import { Logger } from 'winston'
+import type { Logger } from 'winston'
 import { LoggerUtil } from '../util/LoggerUtil.js'
+import type { FileStructure } from './FileStructure.js'
 
 export abstract class BaseFileStructure implements FileStructure {
-
     protected logger: Logger
     protected containerDirectory: string
 
@@ -28,5 +27,4 @@ export abstract class BaseFileStructure implements FileStructure {
     }
 
     public abstract getLoggerName(): string
-
 }

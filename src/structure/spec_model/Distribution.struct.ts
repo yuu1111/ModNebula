@@ -1,17 +1,16 @@
+import { readFile, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { mkdirs, pathExists } from 'fs-extra/esm'
-import { readFile, writeFile } from 'fs/promises'
-import { Distribution } from 'helios-distribution-types'
-import { SpecModelStructure } from './SpecModelStructure.js'
-import { ServerStructure } from './Server.struct.js'
-import { join, resolve } from 'path'
-import { DistroMeta, getDefaultDistroMeta } from '../../model/nebula/DistroMeta.js'
-import { addSchemaToObject, SchemaTypes } from '../../util/SchemaUtil.js'
+import type { Distribution } from 'helios-distribution-types'
+import { type DistroMeta, getDefaultDistroMeta } from '../../model/nebula/DistroMeta.js'
 import { LoggerUtil } from '../../util/LoggerUtil.js'
+import { addSchemaToObject, SchemaTypes } from '../../util/SchemaUtil.js'
+import { ServerStructure } from './Server.struct.js'
+import type { SpecModelStructure } from './SpecModelStructure.js'
 
 const logger = LoggerUtil.getLogger('DistributionStructure')
 
 export class DistributionStructure implements SpecModelStructure<Distribution> {
-
     private readonly DISTRO_META_FILE = 'distrometa.json'
 
     private serverStruct: ServerStructure
@@ -32,7 +31,7 @@ export class DistributionStructure implements SpecModelStructure<Distribution> {
         await mkdirs(this.metaPath)
 
         const distroMetaFile = resolve(this.metaPath, this.DISTRO_META_FILE)
-        if(await pathExists(distroMetaFile)) {
+        if (await pathExists(distroMetaFile)) {
             logger.warn(`Distro Meta file already exists at ${distroMetaFile}!`)
             logger.warn('If you wish to regenerate this file, you must delete the existing one!')
         } else {
@@ -48,15 +47,15 @@ export class DistributionStructure implements SpecModelStructure<Distribution> {
     }
 
     public async getSpecModel(): Promise<Distribution> {
-
-        const distroMeta = JSON.parse(await readFile(resolve(this.metaPath, this.DISTRO_META_FILE), 'utf-8')) as DistroMeta
+        const distroMeta = JSON.parse(
+            await readFile(resolve(this.metaPath, this.DISTRO_META_FILE), 'utf-8')
+        ) as DistroMeta
 
         return {
             version: '1.0.0',
             rss: distroMeta.meta.rss,
-            ...(distroMeta.meta.discord ? {discord: distroMeta.meta.discord} : {}),
-            servers: await this.serverStruct.getSpecModel()
+            ...(distroMeta.meta.discord ? { discord: distroMeta.meta.discord } : {}),
+            servers: await this.serverStruct.getSpecModel(),
         }
     }
-
 }

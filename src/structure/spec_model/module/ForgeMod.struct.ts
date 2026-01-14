@@ -1,13 +1,12 @@
 import { Type } from 'helios-distribution-types'
-import { VersionSegmented } from '../../../util/VersionSegmented.js'
-import { MinecraftVersion } from '../../../util/MinecraftVersion.js'
-import { BaseModStructure } from './Mod.struct.js'
 import { LibraryType } from '../../../model/claritas/ClaritasLibraryType.js'
-import { ClaritasException } from './Module.struct.js'
-import { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import type { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import type { MinecraftVersion } from '../../../util/MinecraftVersion.js'
+import type { VersionSegmented } from '../../../util/VersionSegmented.js'
+import { BaseModStructure } from './Mod.struct.js'
+import type { ClaritasException } from './Module.struct.js'
 
 export abstract class BaseForgeModStructure<T> extends BaseModStructure<T> implements VersionSegmented {
-
     protected readonly EXAMPLE_MOD_ID = 'examplemod'
 
     constructor(
@@ -23,12 +22,14 @@ export abstract class BaseForgeModStructure<T> extends BaseModStructure<T> imple
     public abstract isForVersion(version: MinecraftVersion, libraryVersion: string): boolean
 
     protected getClaritasExceptions(): ClaritasException[] {
-        return [{
-            exceptionName: 'optifine',
-            proxyMetadata: {
-                group: 'net.optifine'
-            }
-        }]
+        return [
+            {
+                exceptionName: 'optifine',
+                proxyMetadata: {
+                    group: 'net.optifine',
+                },
+            },
+        ]
     }
 
     protected getClaritasType(): LibraryType {
@@ -36,7 +37,6 @@ export abstract class BaseForgeModStructure<T> extends BaseModStructure<T> imple
     }
 
     protected discernResult(claritasValue: string | undefined, crudeInference: string): string {
-        return (claritasValue == null || claritasValue == '') ? crudeInference : claritasValue
+        return claritasValue == null || claritasValue === '' ? crudeInference : claritasValue
     }
-
 }

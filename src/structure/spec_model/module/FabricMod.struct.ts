@@ -1,13 +1,12 @@
-import StreamZip from 'node-stream-zip'
 import { Type } from 'helios-distribution-types'
+import type StreamZip from 'node-stream-zip'
+import type { FabricModJson } from '../../../model/fabric/FabricModJson.js'
+import type { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import type { MinecraftVersion } from '../../../util/MinecraftVersion.js'
 import { capitalize } from '../../../util/StringUtils.js'
-import { FabricModJson } from '../../../model/fabric/FabricModJson.js'
-import { MinecraftVersion } from '../../../util/MinecraftVersion.js'
 import { BaseModStructure } from './Mod.struct.js'
-import { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
 
 export class FabricModStructure extends BaseModStructure<FabricModJson> {
-
     constructor(
         absoluteRoot: string,
         relativeRoot: string,
@@ -36,12 +35,24 @@ export class FabricModStructure extends BaseModStructure<FabricModJson> {
             // adapted from https://github.com/dscalzi/Claritas/blob/master/src/main/java/com/dscalzi/claritas/util/DataUtil.java
             if (group != null) {
                 const packageBits = group.split('.')
-                const blacklist = ['common', 'util', 'internal', 'tweaker', 'tweak', 'client', ...['forge', 'fabric', 'bukkit', 'sponge'].filter(t => t !== fmData.id)]
+                const blacklist = [
+                    'common',
+                    'util',
+                    'internal',
+                    'tweaker',
+                    'tweak',
+                    'client',
+                    ...['forge', 'fabric', 'bukkit', 'sponge'].filter((t) => t !== fmData.id),
+                ]
                 // Note: Entry point is a fully qualified class name, hence why this adaptation pops immediately (drop class name).
                 while (packageBits.length > 0) {
                     packageBits.pop()
                     const term = packageBits[packageBits.length - 1]
-                    if ((term !== fmData.id && !blacklist.includes(term)) || packageBits.length === 1 || (packageBits.length === 2 && term === fmData.id)) {
+                    if (
+                        (term !== fmData.id && !blacklist.includes(term)) ||
+                        packageBits.length === 1 ||
+                        (packageBits.length === 2 && term === fmData.id)
+                    ) {
                         break
                     }
                 }
@@ -56,12 +67,11 @@ export class FabricModStructure extends BaseModStructure<FabricModJson> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected processZip(zip: StreamZip, name: string, path: string): FabricModJson {
-
+    protected processZip(zip: StreamZip, name: string, _path: string): FabricModJson {
         let raw: Buffer | undefined
         try {
             raw = zip.entryDataSync('fabric.mod.json')
-        } catch(err) {
+        } catch (_err) {
             // ignored
         }
 
@@ -69,7 +79,7 @@ export class FabricModStructure extends BaseModStructure<FabricModJson> {
             try {
                 const parsed = JSON.parse(raw.toString()) as FabricModJson
                 this.modMetadata[name] = parsed
-            } catch (err) {
+            } catch (_err) {
                 this.logger.error(`FabricMod ${name} contains an invalid fabric.mod.json file.`)
             }
         } else {
@@ -78,12 +88,12 @@ export class FabricModStructure extends BaseModStructure<FabricModJson> {
 
         const crudeInference = this.attemptCrudeInference(name)
 
-        if(this.modMetadata[name] == null) {
-            this.modMetadata[name] = ({
+        if (this.modMetadata[name] == null) {
+            this.modMetadata[name] = {
                 id: crudeInference.name.toLowerCase(),
                 name: crudeInference.name,
-                version: crudeInference.version
-            })
+                version: crudeInference.version,
+            }
         }
 
         return this.modMetadata[name]

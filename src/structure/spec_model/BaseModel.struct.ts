@@ -1,8 +1,7 @@
 import { BaseFileStructure } from '../BaseFileStructure.js'
-import { SpecModelStructure } from './SpecModelStructure.js'
+import type { SpecModelStructure } from './SpecModelStructure.js'
 
 export abstract class BaseModelStructure<T> extends BaseFileStructure implements SpecModelStructure<T[]> {
-
     protected resolvedModels: T[] | undefined
 
     constructor(
@@ -15,5 +14,4 @@ export abstract class BaseModelStructure<T> extends BaseFileStructure implements
     }
 
     public abstract getSpecModel(): Promise<T[]>
-
 }

@@ -1,5 +1,5 @@
-import { normalize } from 'path'
-import { URL } from 'url'
+import { normalize } from 'node:path'
+import { URL } from 'node:url'
 
 export interface MavenComponents {
     group: string
@@ -10,7 +10,6 @@ export interface MavenComponents {
 }
 
 export class MavenUtil {
-
     public static readonly ID_REGEX = /([^@:]+):([^@:]+):?([^@:]+)?:?(?:([^@:]+))?:?(?:@{1}([^@:]+))?/
 
     public static mavenComponentsToIdentifier(
@@ -32,10 +31,7 @@ export class MavenUtil {
         return MavenUtil.mavenComponentsToIdentifier(group, artifact, version, classifier)
     }
 
-    public static mavenComponentsToVersionlessIdentifier(
-        group: string,
-        artifact: string
-    ): string {
+    public static mavenComponentsToVersionlessIdentifier(group: string, artifact: string): string {
         return `${group}:${artifact}`
     }
 
@@ -56,7 +52,7 @@ export class MavenUtil {
                 artifact: result[2],
                 version: result[3],
                 classifier: result[4],
-                extension: result[5] || extension
+                extension: result[5] || extension,
             }
         }
 
@@ -66,13 +62,15 @@ export class MavenUtil {
     public static mavenIdentifierAsPath(id: string, extension = 'jar'): string {
         const tmp = MavenUtil.getMavenComponents(id, extension)
 
-        return MavenUtil.mavenComponentsAsPath(
-            tmp.group, tmp.artifact, tmp.version, tmp.classifier, tmp.extension
-        )
+        return MavenUtil.mavenComponentsAsPath(tmp.group, tmp.artifact, tmp.version, tmp.classifier, tmp.extension)
     }
 
     public static mavenComponentsAsPath(
-        group: string, artifact: string, version: string, classifier?: string, extension = 'jar'
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension = 'jar'
     ): string {
         return `${group.replace(/\./g, '/')}/${artifact}/${version}/${artifact}-${version}${classifier != null ? `-${classifier}` : ''}.${extension}`
     }
@@ -82,7 +80,11 @@ export class MavenUtil {
     }
 
     public static mavenComponentsToUrl(
-        group: string, artifact: string, version: string, classifier?: string, extension = 'jar'
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension = 'jar'
     ): URL {
         return new URL(MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension))
     }
@@ -92,9 +94,12 @@ export class MavenUtil {
     }
 
     public static mavenComponentsAsNormalizedPath(
-        group: string, artifact: string, version: string, classifier?: string, extension = 'jar'
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension = 'jar'
     ): string {
         return normalize(MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension))
     }
-
 }

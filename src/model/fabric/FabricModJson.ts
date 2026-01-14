@@ -4,10 +4,8 @@
 type FabricEntryPoint = string | { value: string }
 
 export interface FabricModJson {
-
     id: string
     version: string
     name?: string
     entrypoints?: { [key: string]: FabricEntryPoint[] }
-
 }

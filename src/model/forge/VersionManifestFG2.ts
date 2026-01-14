@@ -1,5 +1,4 @@
 export interface VersionManifestFG2 {
-
     id: string
     time: string
     releaseTime: string
@@ -17,5 +16,4 @@ export interface VersionManifestFG2 {
         clientreq?: boolean
         comment?: string
     }[]
-
 }

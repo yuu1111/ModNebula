@@ -1,23 +1,16 @@
-import { ForgeModStructure113 } from '../structure/spec_model/module/forgemod/ForgeMod113.struct.js'
-import { ForgeModStructure17 } from '../structure/spec_model/module/forgemod/ForgeMod17.struct.js'
-import { ForgeGradle3Adapter } from '../resolver/forge/adapter/ForgeGradle3.resolver.js'
+import type { UntrackedFilesOption } from '../model/nebula/ServerMeta.js'
 import { ForgeGradle2Adapter } from '../resolver/forge/adapter/ForgeGradle2.resolver.js'
-import { ForgeResolver } from '../resolver/forge/Forge.resolver.js'
-import { BaseForgeModStructure } from '../structure/spec_model/module/ForgeMod.struct.js'
-import { MinecraftVersion } from './MinecraftVersion.js'
-import { UntrackedFilesOption } from '../model/nebula/ServerMeta.js'
+import { ForgeGradle3Adapter } from '../resolver/forge/adapter/ForgeGradle3.resolver.js'
+import type { ForgeResolver } from '../resolver/forge/Forge.resolver.js'
+import type { BaseForgeModStructure } from '../structure/spec_model/module/ForgeMod.struct.js'
+import { ForgeModStructure17 } from '../structure/spec_model/module/forgemod/ForgeMod17.struct.js'
+import { ForgeModStructure113 } from '../structure/spec_model/module/forgemod/ForgeMod113.struct.js'
+import type { MinecraftVersion } from './MinecraftVersion.js'
 
 export class VersionSegmentedRegistry {
+    public static readonly FORGE_ADAPTER_IMPL = [ForgeGradle2Adapter, ForgeGradle3Adapter]
 
-    public static readonly FORGE_ADAPTER_IMPL = [
-        ForgeGradle2Adapter,
-        ForgeGradle3Adapter
-    ]
-
-    public static readonly FORGEMOD_STRUCT_IMPL = [
-        ForgeModStructure17,
-        ForgeModStructure113
-    ]
+    public static readonly FORGEMOD_STRUCT_IMPL = [ForgeModStructure17, ForgeModStructure113]
 
     public static getForgeResolver(
         minecraftVersion: MinecraftVersion,
@@ -30,7 +23,15 @@ export class VersionSegmentedRegistry {
     ): ForgeResolver {
         for (const impl of VersionSegmentedRegistry.FORGE_ADAPTER_IMPL) {
             if (impl.isForVersion(minecraftVersion, forgeVersion)) {
-                return new impl(absoluteRoot, relativeRoot, baseURL, minecraftVersion, forgeVersion, discardOutput, invalidateCache)
+                return new impl(
+                    absoluteRoot,
+                    relativeRoot,
+                    baseURL,
+                    minecraftVersion,
+                    forgeVersion,
+                    discardOutput,
+                    invalidateCache
+                )
             }
         }
         throw new Error(`No forge resolver found for Minecraft ${minecraftVersion}!`)
@@ -51,5 +52,4 @@ export class VersionSegmentedRegistry {
         }
         throw new Error(`No forge mod structure found for Minecraft ${minecraftVersion}!`)
     }
-
 }

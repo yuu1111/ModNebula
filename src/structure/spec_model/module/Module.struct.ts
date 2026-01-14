@@ -1,17 +1,17 @@
-import { minimatch } from 'minimatch'
-import { createHash } from 'crypto'
+import { createHash } from 'node:crypto'
+import type { Stats } from 'node:fs'
+import { lstat, readdir, readFile, unlink, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { pathExists } from 'fs-extra/esm'
-import { Stats } from 'fs'
-import { lstat, readdir, readFile, writeFile, unlink } from 'fs/promises'
-import { Artifact, Module, Type, TypeMetadata } from 'helios-distribution-types'
-import { resolve } from 'path'
-import { BaseModelStructure } from '../BaseModel.struct.js'
-import { LibraryType } from '../../../model/claritas/ClaritasLibraryType.js'
-import { ClaritasResult, ClaritasModuleMetadata } from '../../../model/claritas/ClaritasResult.js'
-import { ClaritasWrapper } from '../../../util/java/ClaritasWrapper.js'
-import { MinecraftVersion } from '../../../util/MinecraftVersion.js'
-import { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import { type Artifact, type Module, type Type, TypeMetadata } from 'helios-distribution-types'
 import merge from 'lodash.merge'
+import { minimatch } from 'minimatch'
+import type { LibraryType } from '../../../model/claritas/ClaritasLibraryType.js'
+import type { ClaritasModuleMetadata, ClaritasResult } from '../../../model/claritas/ClaritasResult.js'
+import type { UntrackedFilesOption } from '../../../model/nebula/ServerMeta.js'
+import { ClaritasWrapper } from '../../../util/java/ClaritasWrapper.js'
+import type { MinecraftVersion } from '../../../util/MinecraftVersion.js'
+import { BaseModelStructure } from '../BaseModel.struct.js'
 
 export interface ModuleCandidate {
     file: string
@@ -25,14 +25,11 @@ export interface ClaritasException {
 }
 
 export abstract class ModuleStructure extends BaseModelStructure<Module> {
-
     private readonly crudeRegex = /(.+?)-(.+).[jJ][aA][rR]/
     protected readonly DEFAULT_VERSION = '0.0.0'
-    protected readonly FILE_NAME_BLACKLIST = [
-        '.gitkeep'
-    ]
+    protected readonly FILE_NAME_BLACKLIST = ['.gitkeep']
 
-    protected untrackedFilePatterns: string[]          // List of glob patterns. 
+    protected untrackedFilePatterns: string[] // List of glob patterns.
     protected claritasResult!: ClaritasResult
 
     private readonly linkRegex = /^(.+)\.link\.json$/i
@@ -45,7 +42,7 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
         protected minecraftVersion: MinecraftVersion,
         protected type: Type,
         untrackedFiles: UntrackedFilesOption[],
-        protected filter?: ((name: string, path: string, stats: Stats) => boolean)
+        protected filter?: (name: string, path: string, stats: Stats) => boolean
     ) {
         super(absoluteRoot, relativeRoot, structRoot, baseUrl)
         this.untrackedFilePatterns = this.determineUntrackedFiles(structRoot, untrackedFiles)
@@ -67,17 +64,17 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
         return `${group}:${id}:${version}@${TypeMetadata[this.type].defaultExtension}`
     }
 
-    protected attemptCrudeInference(name: string): { name: string, version: string } {
+    protected attemptCrudeInference(name: string): { name: string; version: string } {
         const result = this.crudeRegex.exec(name)
-        if(result != null) {
+        if (result != null) {
             return {
                 name: result[1],
-                version: result[2]
+                version: result[2],
             }
         } else {
             return {
                 name: name.substring(0, name.lastIndexOf('.')),
-                version: this.DEFAULT_VERSION
+                version: this.DEFAULT_VERSION,
             }
         }
     }
@@ -100,33 +97,32 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
     protected abstract getModulePath(name: string, path: string, stats: Stats): Promise<string | null>
 
     protected async parseModule(file: string, filePath: string, stats: Stats): Promise<Module> {
-
         // Only .link.json exists, return the module from link file.
         const linkMatch = this.linkRegex.exec(file)
-        if (linkMatch != null && !await pathExists(linkMatch[1])) {
+        if (linkMatch != null && !(await pathExists(linkMatch[1]))) {
             this.logger.info(`Found only link file: ${filePath}, ${file}`)
             return JSON.parse(await readFile(filePath, { encoding: 'utf-8' })) as Module
         }
 
         const artifact: Artifact = {
             size: stats.size,
-            url: await this.getModuleUrl(file, filePath, stats)
+            url: await this.getModuleUrl(file, filePath, stats),
         }
-        
-        const relativeToContainer = filePath.substr(this.containerDirectory.length+1)
+
+        const relativeToContainer = filePath.substr(this.containerDirectory.length + 1)
         const untrackedByPattern = this.isFileUntracked(relativeToContainer)
-        if(!untrackedByPattern) {
+        if (!untrackedByPattern) {
             const buf = await readFile(filePath)
             artifact.MD5 = createHash('md5').update(buf).digest('hex')
         } else {
             this.logger.debug(`File ${relativeToContainer} is untracked. Matching pattern: ${untrackedByPattern}`)
         }
-        
+
         const mdl: Module = {
             id: await this.getModuleId(file, filePath),
             name: await this.getModuleName(file, filePath),
             type: this.type,
-            artifact
+            artifact,
         }
         const pth = await this.getModulePath(file, filePath, stats)
         if (pth) {
@@ -150,7 +146,6 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
     }
 
     protected async _doModuleDiscovery(scanDirectory: string): Promise<ModuleCandidate[]> {
-
         const moduleCandidates: ModuleCandidate[] = []
 
         if (await pathExists(scanDirectory)) {
@@ -159,9 +154,9 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
                 const filePath = resolve(scanDirectory, file)
                 const stats = await lstat(filePath)
                 if (stats.isFile()) {
-                    if(!this.FILE_NAME_BLACKLIST.includes(file)) {
-                        if(this.filter == null || this.filter(file, filePath, stats)) {
-                            moduleCandidates.push({file, filePath, stats})
+                    if (!this.FILE_NAME_BLACKLIST.includes(file)) {
+                        if (this.filter == null || this.filter(file, filePath, stats)) {
+                            moduleCandidates.push({ file, filePath, stats })
                         }
                     }
                 }
@@ -169,69 +164,74 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
         }
 
         return moduleCandidates
-
     }
 
     protected async invokeClaritas(moduleCandidates: ModuleCandidate[]): Promise<void> {
-        if(this.getClaritasType() != null) {
+        if (this.getClaritasType() != null) {
             const claritasExecutor = new ClaritasWrapper(this.absoluteRoot)
 
             let claritasCandidates = moduleCandidates
             const exceptionCandidates: [ModuleCandidate, ClaritasException][] = []
-            for(const exception of this.getClaritasExceptions()) {
-                const exceptionCandidate = moduleCandidates.find((value) => value.file.toLowerCase().includes(exception.exceptionName))
-                if(exceptionCandidate != null) {
+            for (const exception of this.getClaritasExceptions()) {
+                const exceptionCandidate = moduleCandidates.find((value) =>
+                    value.file.toLowerCase().includes(exception.exceptionName)
+                )
+                if (exceptionCandidate != null) {
                     exceptionCandidates.push([exceptionCandidate, exception])
-                    claritasCandidates = claritasCandidates.filter((value) => !value.file.toLowerCase().includes(exception.exceptionName))
+                    claritasCandidates = claritasCandidates.filter(
+                        (value) => !value.file.toLowerCase().includes(exception.exceptionName)
+                    )
                 }
             }
 
             this.claritasResult = await claritasExecutor.execute(
                 this.getClaritasType()!,
                 this.minecraftVersion,
-                claritasCandidates.map(entry => entry.filePath)
+                claritasCandidates.map((entry) => entry.filePath)
             )
 
-            if(this.claritasResult == null) {
+            if (this.claritasResult == null) {
                 this.logger.error('Failed to process Claritas result!')
             } else {
-                for(const [candidate, exception] of exceptionCandidates) {
+                for (const [candidate, exception] of exceptionCandidates) {
                     this.claritasResult[candidate.filePath] = exception.proxyMetadata
                 }
             }
         }
     }
 
-    protected async _doModuleRetrieval(moduleCandidates: ModuleCandidate[], options?: {
-        preProcess?: (candidate: ModuleCandidate) => void
-        postProcess?: (module: Module) => void
-    }): Promise<Module[]> {
-
+    protected async _doModuleRetrieval(
+        moduleCandidates: ModuleCandidate[],
+        options?: {
+            preProcess?: (candidate: ModuleCandidate) => void
+            postProcess?: (module: Module) => void
+        }
+    ): Promise<Module[]> {
         const accumulator: Module[] = []
-        
-        if(moduleCandidates.length > 0) {
 
+        if (moduleCandidates.length > 0) {
             // Invoke Claritas and attach result to class.
             await this.invokeClaritas(moduleCandidates)
-    
+
             // Process Modules
-            for(const candidate of moduleCandidates) {
+            for (const candidate of moduleCandidates) {
                 options?.preProcess?.(candidate)
                 const mdl = await this.parseModule(candidate.file, candidate.filePath, candidate.stats)
                 options?.postProcess?.(mdl)
                 accumulator.push(mdl)
             }
-
         }
-        
-        return accumulator
 
+        return accumulator
     }
 
-    protected determineUntrackedFiles(targetStructRoot: string, untrackedFileOptions?: UntrackedFilesOption[]): string[] {
-        if(untrackedFileOptions) {
+    protected determineUntrackedFiles(
+        targetStructRoot: string,
+        untrackedFileOptions?: UntrackedFilesOption[]
+    ): string[] {
+        if (untrackedFileOptions) {
             return untrackedFileOptions
-                .filter(x => x.appliesTo.includes(targetStructRoot))
+                .filter((x) => x.appliesTo.includes(targetStructRoot))
                 .reduce((acc, cur) => acc.concat(cur.patterns), [] as string[])
         }
         return []
@@ -239,7 +239,6 @@ export abstract class ModuleStructure extends BaseModelStructure<Module> {
 
     // Will return the matching pattern, undefined if no match.
     protected isFileUntracked(pathRelativeToContainer: string): string | undefined {
-        return this.untrackedFilePatterns.find(pattern => minimatch(pathRelativeToContainer, pattern))
+        return this.untrackedFilePatterns.find((pattern) => minimatch(pathRelativeToContainer, pattern))
     }
-
 }

@@ -1,18 +1,23 @@
+import { lstat, readdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, join, resolve as resolvePath } from 'node:path'
+import { URL } from 'node:url'
 import { mkdirs, pathExists } from 'fs-extra/esm'
-import { lstat, readdir, readFile, writeFile } from 'fs/promises'
-import { Server, Module } from 'helios-distribution-types'
-import { dirname, join, resolve as resolvePath } from 'path'
-import { URL } from 'url'
+import type { Module, Server } from 'helios-distribution-types'
+import {
+    getDefaultServerMeta,
+    type ServerMeta,
+    type ServerMetaOptions,
+    type UntrackedFilesOption,
+} from '../../model/nebula/ServerMeta.js'
+import { FabricResolver } from '../../resolver/fabric/Fabric.resolver.js'
+import { MinecraftVersion } from '../../util/MinecraftVersion.js'
+import { addSchemaToObject, SchemaTypes } from '../../util/SchemaUtil.js'
+import { isValidUrl } from '../../util/StringUtils.js'
 import { VersionSegmentedRegistry } from '../../util/VersionSegmentedRegistry.js'
-import { ServerMeta, getDefaultServerMeta, ServerMetaOptions, UntrackedFilesOption } from '../../model/nebula/ServerMeta.js'
 import { BaseModelStructure } from './BaseModel.struct.js'
 import { FabricModStructure } from './module/FabricMod.struct.js'
 import { MiscFileStructure } from './module/File.struct.js'
 import { LibraryStructure } from './module/Library.struct.js'
-import { MinecraftVersion } from '../../util/MinecraftVersion.js'
-import { addSchemaToObject, SchemaTypes } from '../../util/SchemaUtil.js'
-import { isValidUrl } from '../../util/StringUtils.js'
-import { FabricResolver } from '../../resolver/fabric/Fabric.resolver.js'
 
 export interface CreateServerResult {
     modContainer?: string
@@ -21,7 +26,6 @@ export interface CreateServerResult {
 }
 
 export class ServerStructure extends BaseModelStructure<Server> {
-
     private readonly ID_REGEX = /(.+-(.+)$)/
     private readonly SERVER_META_FILE = 'servermeta.json'
 
@@ -70,9 +74,9 @@ export class ServerStructure extends BaseModelStructure<Server> {
         await mkdirs(absoluteServerRoot)
 
         const serverMetaOpts: ServerMetaOptions = {
-            version: options.version
+            version: options.version,
         }
-        let modContainer: string | undefined = undefined
+        let modContainer: string | undefined
 
         if (options.forgeVersion != null) {
             const fms = VersionSegmentedRegistry.getForgeModStruct(
@@ -117,20 +121,17 @@ export class ServerStructure extends BaseModelStructure<Server> {
         return {
             modContainer,
             libraryContainer: libS.getContainerDirectory(),
-            miscFileContainer: mfs.getContainerDirectory()
+            miscFileContainer: mfs.getContainerDirectory(),
         }
-
     }
 
     private async _doSeverRetrieval(): Promise<Server[]> {
-
         const accumulator: Server[] = []
         const files = await readdir(this.containerDirectory)
         for (const file of files) {
             const absoluteServerRoot = resolvePath(this.containerDirectory, file)
             const relativeServerRoot = join(this.relativeRoot, file)
             if ((await lstat(absoluteServerRoot)).isDirectory()) {
-
                 this.logger.info(`Beginning processing of ${file}.`)
 
                 const match = this.ID_REGEX.exec(file)
@@ -141,7 +142,9 @@ export class ServerStructure extends BaseModelStructure<Server> {
                 }
 
                 // Read server meta
-                const serverMeta = JSON.parse(await readFile(resolvePath(absoluteServerRoot, this.SERVER_META_FILE), 'utf-8')) as ServerMeta
+                const serverMeta = JSON.parse(
+                    await readFile(resolvePath(absoluteServerRoot, this.SERVER_META_FILE), 'utf-8')
+                ) as ServerMeta
                 const minecraftVersion = new MinecraftVersion(match[2])
                 const untrackedFiles: UntrackedFilesOption[] = serverMeta.untrackedFiles || []
 
@@ -149,11 +152,10 @@ export class ServerStructure extends BaseModelStructure<Server> {
 
                 // Resolve server icon
 
-                if(serverMeta.meta.icon && isValidUrl(serverMeta.meta.icon)) {
+                if (serverMeta.meta.icon && isValidUrl(serverMeta.meta.icon)) {
                     // Use the url they gave us.
                     iconUrl = serverMeta.meta.icon
                 } else {
-
                     this.logger.info('Server icon is either not set or not a valid URL.')
                     this.logger.info(`Looking for an icon file at ${absoluteServerRoot}`)
 
@@ -172,7 +174,7 @@ export class ServerStructure extends BaseModelStructure<Server> {
 
                 const modules: Module[] = []
 
-                if(serverMeta.forge) {
+                if (serverMeta.forge) {
                     const forgeResolver = VersionSegmentedRegistry.getForgeResolver(
                         minecraftVersion,
                         serverMeta.forge.version,
@@ -200,8 +202,14 @@ export class ServerStructure extends BaseModelStructure<Server> {
                     modules.push(...forgeModModules)
                 }
 
-                if(serverMeta.fabric) {
-                    const fabricResolver = new FabricResolver(dirname(this.containerDirectory), '', this.baseUrl, serverMeta.fabric.version, minecraftVersion)
+                if (serverMeta.fabric) {
+                    const fabricResolver = new FabricResolver(
+                        dirname(this.containerDirectory),
+                        '',
+                        this.baseUrl,
+                        serverMeta.fabric.version,
+                        minecraftVersion
+                    )
                     if (!fabricResolver.isForVersion(minecraftVersion, serverMeta.fabric.version)) {
                         throw new Error(`Fabric resolver does not support Fabric ${serverMeta.fabric.version}!`)
                     }
@@ -221,11 +229,23 @@ export class ServerStructure extends BaseModelStructure<Server> {
                     modules.push(...fabricModModules)
                 }
 
-                const libraryStruct = new LibraryStructure(absoluteServerRoot, relativeServerRoot, this.baseUrl, minecraftVersion, untrackedFiles)
+                const libraryStruct = new LibraryStructure(
+                    absoluteServerRoot,
+                    relativeServerRoot,
+                    this.baseUrl,
+                    minecraftVersion,
+                    untrackedFiles
+                )
                 const libraryModules = await libraryStruct.getSpecModel()
                 modules.push(...libraryModules)
 
-                const fileStruct = new MiscFileStructure(absoluteServerRoot, relativeServerRoot, this.baseUrl, minecraftVersion, untrackedFiles)
+                const fileStruct = new MiscFileStructure(
+                    absoluteServerRoot,
+                    relativeServerRoot,
+                    this.baseUrl,
+                    minecraftVersion,
+                    untrackedFiles
+                )
                 const fileModules = await fileStruct.getSpecModel()
                 modules.push(...fileModules)
 
@@ -237,18 +257,16 @@ export class ServerStructure extends BaseModelStructure<Server> {
                     version: serverMeta.meta.version,
                     address: serverMeta.meta.address,
                     minecraftVersion: match[2],
-                    ...(serverMeta.meta.discord ? {discord: serverMeta.meta.discord} : {}),
+                    ...(serverMeta.meta.discord ? { discord: serverMeta.meta.discord } : {}),
                     mainServer: serverMeta.meta.mainServer,
                     autoconnect: serverMeta.meta.autoconnect,
                     javaOptions: serverMeta.meta.javaOptions,
-                    modules
+                    modules,
                 })
-
             } else {
                 this.logger.warn(`Path ${file} in server directory is not a directory!`)
             }
         }
         return accumulator
     }
-
 }

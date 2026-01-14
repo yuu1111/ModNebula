@@ -1,40 +1,44 @@
-import got from 'got'
+import { createWriteStream } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { URL } from 'node:url'
 import { mkdirs, pathExists } from 'fs-extra/esm'
-import { createWriteStream } from 'fs'
-import { dirname, join, resolve } from 'path'
-import { URL } from 'url'
+import got from 'got'
+import { LoggerUtil } from '../../util/LoggerUtil.js'
 import { MavenUtil } from '../../util/MavenUtil.js'
 import { BaseFileStructure } from '../BaseFileStructure.js'
-import { LoggerUtil } from '../../util/LoggerUtil.js'
 
 export abstract class BaseMavenRepo extends BaseFileStructure {
-
     private static readonly logger = LoggerUtil.getLogger('BaseMavenRepo')
-
-    constructor(
-        absoluteRoot: string,
-        relativeRoot: string,
-        structRoot: string
-    ) {
-        super(absoluteRoot, relativeRoot, structRoot)
-    }
 
     public getArtifactById(mavenIdentifier: string, extension?: string): string {
         return resolve(this.containerDirectory, MavenUtil.mavenIdentifierAsPath(mavenIdentifier, extension))
     }
 
     public getArtifactByComponents(
-        group: string, artifact: string, version: string, classifier?: string, extension = 'jar'
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension = 'jar'
     ): string {
-        return resolve(this.containerDirectory,
-            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension))
+        return resolve(
+            this.containerDirectory,
+            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension)
+        )
     }
 
     public getArtifactUrlByComponents(
-        baseURL: string, group: string, artifact: string, version: string, classifier?: string, extension = 'jar'
+        baseURL: string,
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension = 'jar'
     ): string {
-        return new URL(join(this.relativeRoot,
-            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension)), baseURL).toString()
+        return new URL(
+            join(this.relativeRoot, MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension)),
+            baseURL
+        ).toString()
     }
 
     public async artifactExists(path: string): Promise<boolean> {
@@ -46,10 +50,17 @@ export abstract class BaseMavenRepo extends BaseFileStructure {
     }
 
     public async downloadArtifactByComponents(
-        url: string, group: string, artifact: string, version: string, classifier?: string, extension?: string
+        url: string,
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension?: string
     ): Promise<void> {
-        return this.downloadArtifactBase(url,
-            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension))
+        return this.downloadArtifactBase(
+            url,
+            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension)
+        )
     }
 
     private async downloadArtifactBase(url: string, relative: string): Promise<void> {
@@ -78,22 +89,28 @@ export abstract class BaseMavenRepo extends BaseFileStructure {
     }
 
     public async headArtifactByComponents(
-        url: string, group: string, artifact: string, version: string, classifier?: string, extension?: string
+        url: string,
+        group: string,
+        artifact: string,
+        version: string,
+        classifier?: string,
+        extension?: string
     ): Promise<boolean> {
-        return this.headArtifactBase(url,
-            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension))
+        return this.headArtifactBase(
+            url,
+            MavenUtil.mavenComponentsAsPath(group, artifact, version, classifier, extension)
+        )
     }
 
     private async headArtifactBase(url: string, relative: string): Promise<boolean> {
         const resolvedURL = new URL(relative, url).toString()
         try {
             const response = await got.head({
-                url: resolvedURL
+                url: resolvedURL,
             })
             return response.statusCode === 200
-        } catch (ignored) {
+        } catch (_ignored) {
             return false
         }
     }
-
 }

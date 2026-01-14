@@ -1,17 +1,16 @@
+import { lstat, readFile, writeFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
 import { mkdirs, pathExists } from 'fs-extra/esm'
-import { lstat, readFile, writeFile } from 'fs/promises'
-import { Module, Type } from 'helios-distribution-types'
-import { dirname } from 'path'
-import { FabricProfileJson } from '../../model/fabric/FabricMeta.js'
+import { type Module, Type } from 'helios-distribution-types'
+import type { FabricProfileJson } from '../../model/fabric/FabricMeta.js'
 import { RepoStructure } from '../../structure/repo/Repo.struct.js'
 import { LoggerUtil } from '../../util/LoggerUtil.js'
 import { MavenUtil } from '../../util/MavenUtil.js'
-import { MinecraftVersion } from '../../util/MinecraftVersion.js'
+import type { MinecraftVersion } from '../../util/MinecraftVersion.js'
 import { VersionUtil } from '../../util/VersionUtil.js'
 import { BaseResolver } from '../BaseResolver.js'
 
 export class FabricResolver extends BaseResolver {
-    
     private static readonly log = LoggerUtil.getLogger('FabricResolver')
 
     protected repoStructure: RepoStructure
@@ -41,15 +40,17 @@ export class FabricResolver extends BaseResolver {
     }
 
     public async getFabricModule(): Promise<Module> {
-
         const versionRepo = this.repoStructure.getVersionRepoStruct()
         const versionManifest = versionRepo.getVersionManifest(this.minecraftVersion, this.loaderVersion)
 
         FabricResolver.log.debug(`Checking for fabric profile json at ${versionManifest}..`)
-        if(!await pathExists(versionManifest)) {
+        if (!(await pathExists(versionManifest))) {
             FabricResolver.log.debug('Fabric profile not found locally, initializing download..')
             await mkdirs(dirname(versionManifest))
-            const manifest = await VersionUtil.getFabricProfileJson(this.minecraftVersion.toString(), this.loaderVersion)
+            const manifest = await VersionUtil.getFabricProfileJson(
+                this.minecraftVersion.toString(),
+                this.loaderVersion
+            )
             await writeFile(versionManifest, JSON.stringify(manifest))
         }
         const profileJsonBuf = await readFile(versionManifest)
@@ -57,22 +58,24 @@ export class FabricResolver extends BaseResolver {
 
         const libRepo = this.repoStructure.getLibRepoStruct()
 
-        const modules: Module[] = [{
-            id: versionRepo.getFileName(this.minecraftVersion, this.loaderVersion),
-            name: 'Fabric (version.json)',
-            type: Type.VersionManifest,
-            artifact: this.generateArtifact(
-                profileJsonBuf,
-                await lstat(versionManifest),
-                versionRepo.getVersionManifestURL(this.baseUrl, this.minecraftVersion, this.loaderVersion)
-            )
-        }]
+        const modules: Module[] = [
+            {
+                id: versionRepo.getFileName(this.minecraftVersion, this.loaderVersion),
+                name: 'Fabric (version.json)',
+                type: Type.VersionManifest,
+                artifact: this.generateArtifact(
+                    profileJsonBuf,
+                    await lstat(versionManifest),
+                    versionRepo.getVersionManifestURL(this.baseUrl, this.minecraftVersion, this.loaderVersion)
+                ),
+            },
+        ]
         for (const lib of profileJson.libraries) {
             FabricResolver.log.debug(`Processing ${lib.name}..`)
 
             const localPath = libRepo.getArtifactById(lib.name)
 
-            if (!await libRepo.artifactExists(localPath)) {
+            if (!(await libRepo.artifactExists(localPath))) {
                 FabricResolver.log.debug('Not found locally, downloading..')
                 await libRepo.downloadArtifactById(lib.url, lib.name)
             } else {
@@ -93,17 +96,19 @@ export class FabricResolver extends BaseResolver {
                     stats,
                     libRepo.getArtifactUrlByComponents(
                         this.baseUrl,
-                        mavenComponents.group, mavenComponents.artifact,
-                        mavenComponents.version, mavenComponents.classifier
+                        mavenComponents.group,
+                        mavenComponents.artifact,
+                        mavenComponents.version,
+                        mavenComponents.classifier
                     )
-                )
+                ),
             })
         }
 
         // TODO Rework this
         let index = -1
-        for(let i=0; i<modules.length; i++) {
-            if(modules[i].id.startsWith('net.fabricmc:fabric-loader')) {
+        for (let i = 0; i < modules.length; i++) {
+            if (modules[i].id.startsWith('net.fabricmc:fabric-loader')) {
                 index = i
                 break
             }
@@ -116,7 +121,5 @@ export class FabricResolver extends BaseResolver {
         fabricModule.subModules = modules
 
         return fabricModule
-
     }
-
 }

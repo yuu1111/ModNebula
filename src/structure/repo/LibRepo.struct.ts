@@ -1,7 +1,6 @@
 import { BaseMavenRepo } from './BaseMavenRepo.js'
 
 export class LibRepoStructure extends BaseMavenRepo {
-
     public static readonly MINECRAFT_GROUP = 'net.minecraft'
     public static readonly MINECRAFT_CLIENT_ARTIFACT = 'client'
 
@@ -12,10 +11,7 @@ export class LibRepoStructure extends BaseMavenRepo {
     public static readonly MCLANGUAGE_ARTIFACT = 'mclanguage'
     public static readonly LOWCODELANGUAGE_ARTIFACT = 'lowcodelanguage'
 
-    constructor(
-        absoluteRoot: string,
-        relativeRoot: string
-    ) {
+    constructor(absoluteRoot: string, relativeRoot: string) {
         super(absoluteRoot, relativeRoot, 'lib')
     }
 
@@ -27,7 +23,9 @@ export class LibRepoStructure extends BaseMavenRepo {
         return this.getArtifactByComponents(
             LibRepoStructure.FORGE_GROUP,
             LibRepoStructure.FORGE_ARTIFACT,
-            version, classifier, 'jar')
+            version,
+            classifier,
+            'jar'
+        )
     }
-
 }

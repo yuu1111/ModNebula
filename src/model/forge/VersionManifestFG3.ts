@@ -1,5 +1,4 @@
 export interface VersionManifestFG3 {
-
     id: string
     time: string
     releaseTime: string
@@ -21,5 +20,4 @@ export interface VersionManifestFG3 {
             }
         }
     }[]
-
 }

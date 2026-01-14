@@ -1,12 +1,11 @@
 import StreamZip from 'node-stream-zip'
 import { RepoStructure } from '../../structure/repo/Repo.struct.js'
-import { BaseResolver } from '../BaseResolver.js'
-import { MinecraftVersion } from '../../util/MinecraftVersion.js'
-import { VersionUtil } from '../../util/VersionUtil.js'
 import { LoggerUtil } from '../../util/LoggerUtil.js'
+import type { MinecraftVersion } from '../../util/MinecraftVersion.js'
+import { VersionUtil } from '../../util/VersionUtil.js'
+import { BaseResolver } from '../BaseResolver.js'
 
 export abstract class ForgeResolver extends BaseResolver {
-
     protected readonly MOJANG_REMOTE_REPOSITORY = 'https://libraries.minecraft.net/'
     protected readonly REMOTE_REPOSITORY = 'https://files.minecraftforge.net/maven/'
 
@@ -45,46 +44,42 @@ export abstract class ForgeResolver extends BaseResolver {
             15: '31.2.56',
             14: '28.2.25',
             13: '25.0.222',
-            12: '14.23.5.2857'
+            12: '14.23.5.2857',
         }
 
-        const isVulnerable = major == 1 && (minor <= 18 && minor >= 12)
-        const hasPatch = major == 1 && minor >= 12
+        const isVulnerable = major === 1 && minor <= 18 && minor >= 12
+        const hasPatch = major === 1 && minor >= 12
         let unsafe
 
-        if(isVulnerable) {
-            if(hasPatch) {
+        if (isVulnerable) {
+            if (hasPatch) {
                 unsafe = !VersionUtil.versionGte(this.forgeVersion, patchMatrix[minor])
             } else {
                 unsafe = true
             }
         }
 
-        if(unsafe) {
-
+        if (unsafe) {
             const logger = LoggerUtil.getLogger('ForgeSecurity')
 
             logger.error('==================================================================')
             logger.error('                           WARNING                                ')
             logger.error('  This version of Forge is vulnerable to a CRITICAL RCE exploit.  ')
             logger.error('                    DO NOT USE THIS VERSION!                      ')
-            if(hasPatch) {
+            if (hasPatch) {
                 logger.error(`     A patch is available as of Minecraft Forge v${patchMatrix[minor]}       `)
-            }
-            else {
+            } else {
                 logger.error('         There is no patch available for this version.            ')
             }
             logger.error('==================================================================')
 
             logger.error('To abort, use CTRL + C.')
             logger.error('Nebula will proceed in 15 seconds..')
-            const target = new Date().getTime() + (15*1000)
-            while(new Date().getTime() <= target) {
+            const target = Date.now() + 15 * 1000
+            while (Date.now() <= target) {
                 // Wait
             }
-
         }
-
     }
 
     // Coverage is not 100% but that doesnt matter.
@@ -103,8 +98,7 @@ export abstract class ForgeResolver extends BaseResolver {
                 if (minor === 13 && revision >= 2 && extra >= 1300) {
                     return `${version}-1.7.10`
                 }
-            }
-            else if (major === 11) {
+            } else if (major === 11) {
                 if (minor === 15) {
                     if (revision === 1 && extra >= 1890) {
                         return `${version}-1.8.9`
@@ -125,29 +119,26 @@ export abstract class ForgeResolver extends BaseResolver {
                     }
                 }
             }
-
         }
         return version
     }
 
-    protected async getVersionManifestFromJar(jarPath: string): Promise<Buffer>{
+    protected async getVersionManifestFromJar(jarPath: string): Promise<Buffer> {
         return new Promise((resolve, reject) => {
             const zip = new StreamZip({
                 file: jarPath,
-                storeEntries: true
+                storeEntries: true,
             })
             zip.on('ready', () => {
                 try {
                     const data = zip.entryDataSync('version.json')
                     zip.close()
                     resolve(data)
-                } catch(err) {
+                } catch (err) {
                     reject(err)
                 }
-                
             })
-            zip.on('error', err => reject(err))
+            zip.on('error', (err) => reject(err))
         })
     }
-
 }

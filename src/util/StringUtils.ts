@@ -9,7 +9,7 @@ export function isValidUrl(candidate: string): boolean {
     try {
         new URL(candidate)
         return true
-    } catch (err) {
+    } catch (_err) {
         return false
     }
 }
