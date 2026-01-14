@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { JarExecutor } from './JarExecutor.js'
 
 export class PackXZExtractWrapper extends JarExecutor<void> {
@@ -7,7 +7,9 @@ export class PackXZExtractWrapper extends JarExecutor<void> {
     }
 
     protected getJarPath(): string {
-        return join(process.cwd(), 'libraries', 'java', 'PackXZExtract.jar')
+        const isExecutable = process.execPath.endsWith('.exe') && !process.execPath.includes('bun')
+        const baseDir = isExecutable ? dirname(process.execPath) : process.cwd()
+        return join(baseDir, 'libraries', 'java', 'PackXZExtract.jar')
     }
 
     protected execute(command: string, paths: string[]): Promise<void> {

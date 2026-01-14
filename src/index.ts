@@ -2,7 +2,6 @@ import { writeFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
 import { URL } from 'node:url'
 import { inspect } from 'node:util'
-import dotenv from 'dotenv'
 import type { Argv, CommandModule } from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
@@ -14,8 +13,6 @@ import { MinecraftVersion } from './util/MinecraftVersion.js'
 import { generateSchemas } from './util/SchemaUtil.js'
 import { VersionSegmentedRegistry } from './util/VersionSegmentedRegistry.js'
 import { VersionUtil } from './util/VersionUtil.js'
-
-dotenv.config()
 
 const logger = LoggerUtil.getLogger('Index')
 

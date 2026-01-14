@@ -1,12 +1,16 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "Node16",
+        "module": "ESNext",
         "lib": ["ES2022", "DOM"],
+        "types": ["bun-types"],
         "sourceMap": true,
         "outDir": "dist",
         "strict": true,
-        "moduleResolution": "node16",
-        "esModuleInterop": true
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true
     }
 }

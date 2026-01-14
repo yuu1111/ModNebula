@@ -1,7 +1,12 @@
 # Build directory
 dist
 
-# Logs
+# Compiled executables
+*.exe
+*.exe.debug
+
+
+# Log
 logs
 *.log
 npm-debug.log*

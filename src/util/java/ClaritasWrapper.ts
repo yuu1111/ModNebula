@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { mkdirs, pathExists, remove } from 'fs-extra/esm'
 import type { LibraryType } from '../../model/claritas/ClaritasLibraryType.js'
 import type { ClaritasResult } from '../../model/claritas/ClaritasResult.js'
@@ -37,7 +37,9 @@ export class ClaritasWrapper extends JarExecutor<ClaritasResult> {
     }
 
     protected getJarPath(): string {
-        return join(process.cwd(), 'libraries', 'java', 'Claritas.jar')
+        const isExecutable = process.execPath.endsWith('.exe') && !process.execPath.includes('bun')
+        const baseDir = isExecutable ? dirname(process.execPath) : process.cwd()
+        return join(baseDir, 'libraries', 'java', 'Claritas.jar')
     }
 
     private async writeArgFile(...programArgs: string[]): Promise<void> {
