@@ -438,6 +438,98 @@ const testCommand: CommandModule = {
     },
 }
 
+const serveCommand: CommandModule = {
+    command: 'serve',
+    describe: 'Start a local HTTP server to serve the distribution files.',
+    builder: (yargs) => {
+        return yargs
+            .option('port', {
+                describe: 'Port number for the HTTP server.',
+                type: 'number',
+                default: 8080,
+            })
+            .option('host', {
+                describe: 'Host address to bind the server.',
+                type: 'string',
+                default: 'localhost',
+            })
+    },
+    handler: async (argv) => {
+        const port = argv.port as number
+        const host = argv.host as string
+        const root = getRoot()
+
+        logger.info(`Starting HTTP server...`)
+        logger.info(`Root directory: ${root}`)
+        logger.info(`Server will be available at http://${host}:${port}`)
+
+        try {
+            Bun.serve({
+                port,
+                hostname: host,
+                async fetch(req) {
+                    const url = new URL(req.url)
+                    let filePath = resolvePath(root, `.${url.pathname}`)
+
+                    if (filePath.endsWith('/')) {
+                        filePath = resolvePath(filePath, 'index.html')
+                    }
+
+                    const file = Bun.file(filePath)
+                    const exists = await file.exists()
+
+                    if (!exists) {
+                        return new Response('404 Not Found', { status: 404 })
+                    }
+
+                    const headers = new Headers()
+                    headers.set('Access-Control-Allow-Origin', '*')
+                    headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+                    headers.set('Access-Control-Allow-Headers', '*')
+
+                    if (req.method === 'OPTIONS') {
+                        return new Response(null, { status: 204, headers })
+                    }
+
+                    const mimeType = getMimeType(filePath)
+                    if (mimeType) {
+                        headers.set('Content-Type', mimeType)
+                    }
+
+                    return new Response(file, { headers })
+                },
+            })
+
+            logger.info(`HTTP server started successfully!`)
+            logger.info(`Press Ctrl+C to stop the server.`)
+        } catch (error) {
+            logger.error('Failed to start HTTP server:', error)
+        }
+    },
+}
+
+function getMimeType(filePath: string): string | null {
+    const ext = filePath.split('.').pop()?.toLowerCase()
+    const mimeTypes: Record<string, string> = {
+        html: 'text/html',
+        css: 'text/css',
+        js: 'application/javascript',
+        json: 'application/json',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        svg: 'image/svg+xml',
+        ico: 'image/x-icon',
+        txt: 'text/plain',
+        xml: 'application/xml',
+        pdf: 'application/pdf',
+        zip: 'application/zip',
+        jar: 'application/java-archive',
+    }
+    return ext ? mimeTypes[ext] || null : null
+}
+
 // Registering yargs configuration.
 await yargs(hideBin(process.argv))
     .version(false)
@@ -448,5 +540,6 @@ await yargs(hideBin(process.argv))
     .command(latestForgeCommand)
     .command(recommendedForgeCommand)
     .command(testCommand)
+    .command(serveCommand)
     .demandCommand()
     .help().argv
