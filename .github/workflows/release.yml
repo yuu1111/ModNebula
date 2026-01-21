@@ -30,6 +30,8 @@ jobs:
         run: |
           mkdir dist-package
           copy modnebula.exe dist-package\
+          copy .env.example dist-package\.env
+          xcopy /E /I tools dist-package\tools
           xcopy /E /I libraries dist-package\libraries
 
       - name: Upload artifact
@@ -72,8 +74,17 @@ jobs:
 
             1. Download `modnebula-windows.zip`
             2. Extract the zip file
-            3. Run `modnebula.exe`
+            3. Edit `.env` file with your configuration
+            4. Use the provided batch files in `tools/` folder for easy operation:
+               - `tools/1_Modパックをビルド.bat` - Build modpack (run this first)
+               - `tools/2_CurseForgeからインポート.bat` - Import CurseForge modpack
+               - `tools/3_ローカルサーバー起動.bat` - Start local HTTP server
+               - `tools/4_ランチャーテスト起動.bat` - Test with launcher
+               - See `tools/README.md` for detailed instructions
 
-            The `libraries` folder must be kept in the same directory as the exe file.
+            ## Requirements
+
+            - Java 17 (Amazon Corretto recommended)
+            - The `libraries` folder must be kept in the same directory as the exe file
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
